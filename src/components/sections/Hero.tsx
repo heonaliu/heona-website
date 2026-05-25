@@ -136,7 +136,7 @@ export default function Hero() {
                 {roles.map(({ Icon, label }) => (
                   <span
                     key={label}
-                    style={{ padding: '0.5rem 1rem' }}
+                    style={{ padding: "0.5rem 1rem" }}
                     className="
                       inline-flex items-center justify-center
                       gap-2
@@ -186,6 +186,7 @@ export default function Hero() {
                   <motion.button
                     whileHover={{ scale: 1.04, y: -1 }}
                     whileTap={{ scale: 0.97 }}
+                    style={{ padding: "0.5rem 1rem" }}
                     className="flex items-center gap-2 px-8 py-4 rounded-full
                              bg-[#671372] hover:bg-[#8B1D9F]
                              text-white text-[15px] font-semibold
@@ -198,11 +199,15 @@ export default function Hero() {
                   <motion.button
                     whileHover={{ scale: 1.04, y: -1 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 px-7 py-3.5 rounded-full
-                             bg-white dark:bg-gray-800
-                             border border-gray-200 dark:border-gray-700
-                             text-gray-800 dark:text-gray-200 text-[15px] font-semibold
-                             shadow-soft hover:shadow-medium transition-all duration-200"
+                    style={{ padding: "0.5rem 1rem" }}
+                    className="
+                      flex items-center gap-2 px-8 py-4 rounded-full
+                      border
+                      bg-white dark:bg-gray-800
+                      border-gray-200 dark:border-gray-700
+                      text-[15px]
+                      font-medium
+                      shadow-purple-lg transition-all duration-200"
                   >
                     Read Blog
                   </motion.button>
@@ -211,11 +216,15 @@ export default function Hero() {
                   <motion.button
                     whileHover={{ scale: 1.04, y: -1 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex items-center gap-2 px-7 py-3.5 rounded-full
-                             border border-[#671372]/22 dark:border-[#671372]/32
-                             text-[#671372] dark:text-[#c44cf0] text-[15px] font-semibold
-                             hover:bg-[#671372]/06 dark:hover:bg-[#671372]/10
-                             transition-all duration-200"
+                    style={{ padding: "0.5rem 1rem" }}
+                    className="
+                      flex items-center gap-2 px-8 py-4 rounded-full
+                      border
+                      bg-white dark:bg-gray-800
+                      border-gray-200 dark:border-gray-700
+                      text-[15px]
+                      font-medium
+                      shadow-purple-lg transition-all duration-200"
                   >
                     Contact Me
                   </motion.button>
@@ -223,10 +232,10 @@ export default function Hero() {
               </motion.div>
 
               {/* Stats row */}
+        
               <motion.div
                 variants={item}
-                className="flex items-center gap-12 sm:gap-16
-                         pt-10 border-t border-gray-100 dark:border-gray-800 w-full"
+                className="flex items-center gap-12 sm:gap-16 pt-10 border-t border-gray-100 dark:border-gray-800 w-full justify-center lg:justify-start"
               >
                 {[
                   { value: "10+", label: "Projects Built" },
@@ -269,7 +278,7 @@ export default function Hero() {
                 lg:w-[360px] lg:h-[410px]
                 shrink-0
               "
->
+            >
               {/* Main panel */}
               <div
                 className="w-full h-full rounded-[2rem]
