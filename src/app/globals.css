@@ -36,42 +36,44 @@
 }
 
 /* ─── Base reset ─── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-html {
-  scroll-behavior: smooth;
-  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
-  -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
-  /* Reserve a permanent scrollbar gutter — prevents layout shift on theme toggle */
-  scrollbar-gutter: stable;
-  /* Must match body so the scrollbar gutter area doesn't flash on theme toggle */
-  background-color: #ffffff;
-  transition: background-color 0.3s ease;
-}
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+    /* Reserve a permanent scrollbar gutter — prevents layout shift on theme toggle */
+    scrollbar-gutter: stable;
+    /* Must match body so the scrollbar gutter area doesn't flash on theme toggle */
+    background-color: #ffffff;
+    transition: background-color 0.3s ease;
+  }
 
-html.dark {
-  background-color: #0d0d14;
-}
+  html.dark {
+    background-color: #0d0d14;
+  }
 
-body {
-  background-color: #ffffff;
-  color: #111827;
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  /* Transition on background only — no color repaint that triggers scrollbar reflow */
-  transition: background-color 0.3s ease;
-}
+  body {
+    background-color: #ffffff;
+    color: #111827;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    /* Transition on background only — no color repaint that triggers scrollbar reflow */
+    transition: background-color 0.3s ease;
+  }
 
-.dark body {
-  background-color: #0d0d14;
-  color: #f9fafb;
+  .dark body {
+    background-color: #0d0d14;
+    color: #f9fafb;
+  }
 }
 
 /* ─── Selection ─── */

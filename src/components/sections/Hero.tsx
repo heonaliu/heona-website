@@ -125,7 +125,7 @@ export default function Hero() {
                 leading-[0.98]
                 max-w-[9ch]
                 text-gray-900 dark:text-white
-                mb-6
+                mb-5
               "
               >
                 <span className="gradient-text">Heona Liu</span>
@@ -150,6 +150,8 @@ export default function Hero() {
                       whitespace-nowrap
                       text-gray-700 dark:text-gray-300
                       shadow-soft
+                      hover:bg-[#671372] hover:text-white hover:border-[#671372]
+                      transition-all duration-200
                     "
                   >
                     <Icon
@@ -168,7 +170,7 @@ export default function Hero() {
                 text-lg sm:text-xl
                 leading-[1.9]
                 text-gray-600 dark:text-gray-400
-                mb-12
+                mb-8
                 max-w-xl
               "
               >
@@ -180,7 +182,7 @@ export default function Hero() {
               {/* CTAs */}
               <motion.div
                 variants={item}
-                className="flex flex-wrap gap-3 mb-12"
+                className="flex flex-wrap gap-3 pt-6 border-t border-gray-100 dark:border-gray-800 w-full justify-center lg:justify-start"
               >
                 <Link href="/projects">
                   <motion.button
@@ -233,25 +235,6 @@ export default function Hero() {
 
               {/* Stats row */}
         
-              <motion.div
-                variants={item}
-                className="flex items-center gap-12 sm:gap-16 pt-10 border-t border-gray-100 dark:border-gray-800 w-full justify-center lg:justify-start"
-              >
-                {[
-                  { value: "10+", label: "Projects Built" },
-                  { value: "3+", label: "Years Coding" },
-                  { value: "∞", label: "Things to Learn" },
-                ].map(({ value, label }) => (
-                  <div key={label}>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">
-                      {value}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </motion.div>
             </motion.div>
           </div>
 
