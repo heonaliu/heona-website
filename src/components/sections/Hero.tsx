@@ -136,22 +136,18 @@ export default function Hero() {
                 {roles.map(({ Icon, label }) => (
                   <span
                     key={label}
+                    style={{ padding: '0.5rem 1rem' }}
                     className="
                       inline-flex items-center justify-center
                       gap-2
-
-                      px-5 py-2
-
                       rounded-full
                       border
                       bg-white dark:bg-gray-800
                       border-gray-200 dark:border-gray-700
-
                       text-[15px]
                       leading-none
                       font-medium
                       whitespace-nowrap
-
                       text-gray-700 dark:text-gray-300
                       shadow-soft
                     "

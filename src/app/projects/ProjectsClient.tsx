@@ -215,7 +215,7 @@ export default function ProjectsClient() {
                         <StatusBadge status={project.status} />
                       </div>
 
-                      <div className="flex flex-col flex-1 p-7">
+                      <div className="flex flex-col flex-1 p-4">
                         <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2.5 leading-snug">
                           {project.title}
                         </h3>
@@ -326,7 +326,7 @@ export default function ProjectsClient() {
                 <X size={15} className="text-gray-600 dark:text-gray-300" />
               </button>
 
-              <div className="p-7 space-y-6">
+              <div style={{ padding: '1.75rem' }} className="space-y-6">
                 {[
                   { label: '💡 Inspiration',    text: selected.inspiration     },
                   { label: '🔧 Problem Solved',  text: selected.problem         },

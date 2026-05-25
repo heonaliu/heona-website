@@ -112,7 +112,7 @@ export default function FeaturedProjects() {
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col flex-1 p-7">
+                <div className="flex flex-col flex-1 p-4">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2.5">
                     {project.title}
                   </h3>

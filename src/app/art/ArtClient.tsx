@@ -311,7 +311,7 @@ export default function ArtClient() {
               </div>
 
               {/* Info */}
-              <div className="p-7">
+              <div style={{ padding: '1.75rem' }}>
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">
