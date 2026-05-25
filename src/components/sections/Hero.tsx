@@ -51,8 +51,12 @@ export default function Hero() {
         <motion.div
           animate={{ scale: [1, 1.1, 1], x: [0, 20, 0], y: [0, -15, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full
-                     bg-[#671372]/10 dark:bg-[#671372]/08 blur-3xl"
+          className="absolute top-0 right-0
+            translate-x-1/3 -translate-y-1/3
+            w-[500px] h-[500px]
+            rounded-full
+            bg-[#671372]/10 dark:bg-[#671372]/08
+            blur-3xl"
         />
         <motion.div
           animate={{ scale: [1.1, 1, 1.1], x: [0, -15, 0], y: [0, 20, 0] }}
@@ -62,8 +66,14 @@ export default function Hero() {
             ease: "easeInOut",
             delay: 3,
           }}
-          className="absolute -bottom-48 -left-24 w-[400px] h-[400px] rounded-full
-                     bg-[#8B1D9F]/08 dark:bg-[#8B1D9F]/06 blur-3xl"
+          className="
+            absolute bottom-0 left-0
+            -translate-x-1/4 translate-y-1/3
+            w-[400px] h-[400px]
+            rounded-full
+            bg-[#8B1D9F]/08 dark:bg-[#8B1D9F]/06
+            blur-3xl
+            "
         />
         {/* Dot grid */}
         <div
@@ -76,25 +86,35 @@ export default function Hero() {
         />
       </div>
 
-      <div className="px-20 border-4 border-red-500">
+      <Container>
         <div
           className="
-            grid grid-cols-1 lg:grid-cols-2
-            gap-20 lg:gap-28
+            grid
+            grid-cols-1
+            lg:grid-cols-[620px_360px]
+            gap-16 lg:gap-24
             items-center
+            justify-center
+            w-full
           "
         >
-          {/* ── Left column: copy ── */}
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="order-2 lg:order-1 flex flex-col items-start"
-          >
-            {/* Availability badge */}
-            <motion.div variants={item}>
+          {/* LEFT */}
+          <div className="flex justify-center lg:justify-start">
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="
+          flex flex-col
+          items-center lg:items-start
+          text-center lg:text-left
+          w-full
+        "
+            >
+              {/* Availability badge */}
+              {/* <motion.div variants={item}>
               <span
-                className="inline-flex items-center gap-2 px-4 py-2 mb-8
+                className="inline-flex items-center gap-2 px-8 py-4 mb-8
                                rounded-full border
                                bg-[#671372]/08 border-[#671372]/18
                                dark:bg-[#671372]/15 dark:border-[#671372]/28
@@ -105,127 +125,131 @@ export default function Hero() {
                 Open to opportunities
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </span>
-            </motion.div>
+            </motion.div> */}
 
-            {/* Headline */}
-            <motion.h1
-              variants={item}
-              className="
+              {/* Headline */}
+              <motion.h1
+                variants={item}
+                className="
                 text-5xl
                 sm:text-6xl
-                lg:text-[5.5rem]
+                lg:text-[4.75rem]
                 font-extrabold
                 tracking-tight
                 leading-[0.98]
-                max-w-[11ch]
+                max-w-[9ch]
                 text-gray-900 dark:text-white
                 mb-6
               "
-            >
-              Hi, I&apos;m <span className="gradient-text">Heona</span>
-            </motion.h1>
+              >
+                <span className="gradient-text">Heona Liu</span>
+              </motion.h1>
 
-            {/* Role chips */}
-            <motion.div variants={item} className="flex flex-wrap gap-2 mb-6">
-              {roles.map(({ Icon, label }) => (
-                <span
-                  key={label}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5
+              {/* Role chips */}
+              <motion.div variants={item} className="flex flex-wrap gap-2 mb-6">
+                {roles.map(({ Icon, label }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5
                              rounded-full border
                              bg-white dark:bg-gray-800
                              border-gray-200 dark:border-gray-700
                              text-[15px] font-medium text-gray-700 dark:text-gray-300
                              shadow-soft"
-                >
-                  <Icon
-                    size={12}
-                    className="text-[#671372] dark:text-[#c44cf0]"
-                  />
-                  {label}
-                </span>
-              ))}
-            </motion.div>
+                  >
+                    <Icon
+                      size={12}
+                      className="text-[#671372] dark:text-[#c44cf0]"
+                    />
+                    {label}
+                  </span>
+                ))}
+              </motion.div>
 
-            {/* Bio */}
-            <motion.p
-              variants={item}
-              className="
+              {/* Bio */}
+              <motion.p
+                variants={item}
+                className="
                 text-lg sm:text-xl
                 leading-[1.9]
                 text-gray-600 dark:text-gray-400
                 mb-12
                 max-w-xl
               "
-            >
-              I build things for the web, create digital art, and explore the
-              intersection where engineering meets creativity. CS student —
-              driven by curiosity and a love of thoughtful design.
-            </motion.p>
+              >
+                I build things for the web, create digital art, and explore the
+                intersection where engineering meets creativity. CS student —
+                driven by curiosity and a love of thoughtful design.
+              </motion.p>
 
-            {/* CTAs */}
-            <motion.div variants={item} className="flex flex-wrap gap-3 mb-12">
-              <Link href="/projects">
-                <motion.button
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-8 py-4 rounded-full
+              {/* CTAs */}
+              <motion.div
+                variants={item}
+                className="flex flex-wrap gap-3 mb-12"
+              >
+                <Link href="/projects">
+                  <motion.button
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 px-8 py-4 rounded-full
                              bg-[#671372] hover:bg-[#8B1D9F]
                              text-white text-[15px] font-semibold
                              shadow-purple-lg transition-all duration-200"
-                >
-                  View Projects <ArrowRight size={14} />
-                </motion.button>
-              </Link>
-              <Link href="/blog">
-                <motion.button
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-full
+                  >
+                    View Projects <ArrowRight size={14} />
+                  </motion.button>
+                </Link>
+                <Link href="/blog">
+                  <motion.button
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 px-7 py-3.5 rounded-full
                              bg-white dark:bg-gray-800
                              border border-gray-200 dark:border-gray-700
                              text-gray-800 dark:text-gray-200 text-[15px] font-semibold
                              shadow-soft hover:shadow-medium transition-all duration-200"
-                >
-                  Read Blog
-                </motion.button>
-              </Link>
-              <Link href="/contact">
-                <motion.button
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-full
+                  >
+                    Read Blog
+                  </motion.button>
+                </Link>
+                <Link href="/contact">
+                  <motion.button
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 px-7 py-3.5 rounded-full
                              border border-[#671372]/22 dark:border-[#671372]/32
                              text-[#671372] dark:text-[#c44cf0] text-[15px] font-semibold
                              hover:bg-[#671372]/06 dark:hover:bg-[#671372]/10
                              transition-all duration-200"
-                >
-                  Contact Me
-                </motion.button>
-              </Link>
-            </motion.div>
+                  >
+                    Contact Me
+                  </motion.button>
+                </Link>
+              </motion.div>
 
-            {/* Stats row */}
-            <motion.div
-              variants={item}
-              className="flex items-center gap-12 sm:gap-16
+              {/* Stats row */}
+              <motion.div
+                variants={item}
+                className="flex items-center gap-12 sm:gap-16
                          pt-10 border-t border-gray-100 dark:border-gray-800 w-full"
-            >
-              {[
-                { value: "10+", label: "Projects Built" },
-                { value: "3+", label: "Years Coding" },
-                { value: "∞", label: "Things to Learn" },
-              ].map(({ value, label }) => (
-                <div key={label}>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">
-                    {value}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
-                    {label}
-                  </p>
-                </div>
-              ))}
+              >
+                {[
+                  { value: "10+", label: "Projects Built" },
+                  { value: "3+", label: "Years Coding" },
+                  { value: "∞", label: "Things to Learn" },
+                ].map(({ value, label }) => (
+                  <div key={label}>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">
+                      {value}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+                      {label}
+                    </p>
+                  </div>
+                ))}
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </div>
 
           {/* ── Right column: visual card ── */}
           <motion.div
@@ -240,9 +264,7 @@ export default function Hero() {
               Self-contained card — all decorative children stay inside
               the overflow-hidden wrapper.
             */}
-            <div
-              className="relative w-[340px] h-[390px] sm:w-[390px] sm:h-[440px]"
-            >
+            <div className="relative w-[340px] h-[390px] sm:w-[350px] sm:h-[400px]">
               {/* Main panel */}
               <div
                 className="w-full h-full rounded-[2rem]
@@ -325,10 +347,14 @@ export default function Hero() {
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
-                className="absolute -top-5 -right-5
-                           bg-white dark:bg-gray-800
-                           border border-gray-100 dark:border-gray-700
-                           rounded-2xl px-5 py-3 shadow-medium z-10"
+                className="
+                  absolute top-0 right-0
+                  translate-x-1/4 -translate-y-1/4
+                  bg-white dark:bg-gray-800
+                  border border-gray-100 dark:border-gray-700
+                  rounded-2xl px-5 py-3
+                  shadow-medium z-10
+                  "
               >
                 <div className="flex items-center gap-2">
                   <Code2
@@ -352,10 +378,16 @@ export default function Hero() {
                   ease: "easeInOut",
                   delay: 1.2,
                 }}
-                className="absolute -bottom-5 -left-10
-                           bg-white dark:bg-gray-800
-                           border border-gray-100 dark:border-gray-700
-                           rounded-2xl px-5 py-3 shadow-medium z-10"
+                className="
+                  absolute bottom-0 left-0
+                  -translate-x-1/4 translate-y-1/4
+                  bg-white dark:bg-gray-800
+                  border border-gray-100 dark:border-gray-700
+                  rounded-2xl
+                  px-5 py-3
+                  shadow-medium
+                  z-10
+                  "
               >
                 <div className="flex items-center gap-2">
                   <span className="text-[15px]">🎵</span>
@@ -370,7 +402,7 @@ export default function Hero() {
             </div>
           </motion.div>
         </div>
-      </div>
+      </Container>
 
       {/* Scroll cue */}
       <motion.div
