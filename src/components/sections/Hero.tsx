@@ -112,20 +112,6 @@ export default function Hero() {
               "
             >
               {/* Availability badge */}
-              {/* <motion.div variants={item}>
-              <span
-                className="inline-flex items-center gap-2 px-8 py-4 mb-8
-                               rounded-full border
-                               bg-[#671372]/08 border-[#671372]/18
-                               dark:bg-[#671372]/15 dark:border-[#671372]/28
-                               text-[#671372] dark:text-[#c44cf0]
-                               text-sm font-semibold"
-              >
-                <Sparkles size={11} />
-                Open to opportunities
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              </span>
-            </motion.div> */}
 
               {/* Headline */}
               <motion.h1
@@ -150,16 +136,29 @@ export default function Hero() {
                 {roles.map(({ Icon, label }) => (
                   <span
                     key={label}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5
-                             rounded-full border
-                             bg-white dark:bg-gray-800
-                             border-gray-200 dark:border-gray-700
-                             text-[15px] font-medium text-gray-700 dark:text-gray-300
-                             shadow-soft"
+                    className="
+                      inline-flex items-center justify-center
+                      gap-2
+
+                      px-5 py-2
+
+                      rounded-full
+                      border
+                      bg-white dark:bg-gray-800
+                      border-gray-200 dark:border-gray-700
+
+                      text-[15px]
+                      leading-none
+                      font-medium
+                      whitespace-nowrap
+
+                      text-gray-700 dark:text-gray-300
+                      shadow-soft
+                    "
                   >
                     <Icon
-                      size={12}
-                      className="text-[#671372] dark:text-[#c44cf0]"
+                      size={14}
+                      className="text-[#671372] dark:text-[#c44cf0] shrink-0"
                     />
                     {label}
                   </span>
