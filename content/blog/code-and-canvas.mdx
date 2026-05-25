@@ -1,0 +1,78 @@
+---
+title: "Where Code Meets Canvas"
+excerpt: "Exploring the surprising connections between software engineering and digital art — and why I think every developer should try creating."
+date: "2026-05-20"
+tags: ["art", "coding", "creativity"]
+emoji: "🎨"
+draft: false
+---
+
+# Where Code Meets Canvas
+
+I've been drawing since I was a kid. And I've been coding since I was a teenager. For a long time, I kept them separate — art was *feeling*, code was *logic*. They lived in different tabs on my brain.
+
+But somewhere along the way, the tabs merged.
+
+## The Obvious Connection
+
+The most obvious link is **generative art**. Code that draws. Algorithms that create. A loop that produces something you couldn't have drawn by hand.
+
+p5.js was my first encounter with this. A few lines of JavaScript and suddenly there's a Perlin noise landscape on screen, an emergent pattern that I didn't exactly *make* but somehow *authored*.
+
+```js
+function draw() {
+  background(0)
+  for (let x = 0; x < width; x += 20) {
+    for (let y = 0; y < height; y += 20) {
+      let n = noise(x * 0.005 + t, y * 0.005)
+      let size = n * 15
+      circle(x, y, size)
+    }
+  }
+  t += 0.01
+}
+```
+
+Simple. Beautiful. Neither fully programmed nor fully drawn.
+
+## The Deeper Connection
+
+But the real parallel runs deeper than generative art.
+
+**Both disciplines are about constraints.**
+
+In code, you work within language syntax, performance budgets, browser APIs. In art, you work within your medium — the texture of paper, the blending of digital brushes, the limits of a color palette.
+
+The constraints *aren't the enemy*. They're the interesting part.
+
+When you have infinite freedom, creative paralysis sets in. When you have constraints, creativity has something to push against. A sculptor doesn't regret that marble is hard.
+
+## What Coding Taught Me About Art
+
+Programming taught me to **iterate without ego**.
+
+When your code doesn't work, you don't spiral into a crisis about your identity as a programmer. You debug. You try again. You ship a fix.
+
+I started applying this to art. Instead of staring at a blank canvas paralyzed by the need to make it perfect, I started *sketching aggressively*. Wrong shapes, wrong colors — doesn't matter. Ship the sketch, iterate on it.
+
+My best pieces came from this process. Accidents became features.
+
+## What Art Taught Me About Code
+
+Art taught me to **care about the surface**.
+
+Developers sometimes dismiss aesthetics — it's the logic that matters, right? But UX *is* logic. The experience of using something *is* part of the thing.
+
+Learning to care about visual composition, color harmony, whitespace — these aren't "design skills" separate from engineering. They're part of building things that actually work *for people*.
+
+## An Invitation
+
+If you're a developer who doesn't make art: try it. Not to be "creative" or find a hobby. Try it as a way to train a different part of your problem-solving brain.
+
+If you're an artist who doesn't code: try that too. Not to become a programmer. Try it to understand constraints at a deeper level.
+
+The best things I've made live somewhere in between.
+
+---
+
+*Currently obsessed with: interactive generative art in the browser. Stay tuned.*
