@@ -49,7 +49,7 @@ export default function Hero() {
       >
         <div className="absolute inset-0 bg-mesh-gradient opacity-60 dark:opacity-40" />
         <motion.div
-          animate={{ scale: [1, 1.1, 1], x: [0, 20, 0], y: [0, -15, 0] }}
+          animate={{ scale: [1, 1.1, 1], x: [0, 20, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-0 right-0
             translate-x-1/3 -translate-y-1/3
@@ -337,13 +337,7 @@ export default function Hero() {
               </div>
 
               {/* Decorative floating chips — outside main panel but within 320/360px container */}
-              <motion.div
-                animate={{ y: [-5, 5, -5] }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+              <div
                 className="
                   absolute top-0 right-0
                   translate-x-1/4 -translate-y-1/4
@@ -365,7 +359,7 @@ export default function Hero() {
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                   Favourite language
                 </p>
-              </motion.div>
+              </div>
 
               <motion.div
                 animate={{ y: [5, -5, 5] }}
