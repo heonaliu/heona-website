@@ -1,32 +1,7 @@
-import React from "react";
-
-interface ContainerProps {
-  children: React.ReactNode;
-  className?: string;
-  as?: React.ElementType;
-}
-
-export default function Container({
-  children,
-  className = "",
-  as: Tag = "div",
-}: ContainerProps) {
+export default function Container({ children }: any) {
   return (
-    <Tag
-      className={`
-        relative
-        mx-auto
-        w-full
-        max-w-7xl
-        px-6
-        sm:px-8
-        lg:px-12
-        xl:px-16
-        2xl:px-20
-        ${className}
-      `}
-    >
+    <div style={{ padding: '80px', border: '10px solid red' }}>
       {children}
-    </Tag>
-  );
+    </div>
+  )
 }

@@ -76,13 +76,13 @@ export default function Hero() {
         />
       </div>
 
-      <Container>
+      <div className="px-20 border-4 border-red-500">
         <div
           className="
-    grid grid-cols-1 lg:grid-cols-2
-    gap-20 lg:gap-28
-    items-center
-  "
+            grid grid-cols-1 lg:grid-cols-2
+            gap-20 lg:gap-28
+            items-center
+          "
         >
           {/* ── Left column: copy ── */}
           <motion.div
@@ -352,7 +352,7 @@ export default function Hero() {
                   ease: "easeInOut",
                   delay: 1.2,
                 }}
-                className="absolute -bottom-5 -left-5
+                className="absolute -bottom-5 -left-10
                            bg-white dark:bg-gray-800
                            border border-gray-100 dark:border-gray-700
                            rounded-2xl px-5 py-3 shadow-medium z-10"
@@ -370,7 +370,7 @@ export default function Hero() {
             </div>
           </motion.div>
         </div>
-      </Container>
+      </div>
 
       {/* Scroll cue */}
       <motion.div
