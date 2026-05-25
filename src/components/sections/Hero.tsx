@@ -91,25 +91,25 @@ export default function Hero() {
           className="
             grid
             grid-cols-1
-            lg:grid-cols-[620px_360px]
-            gap-16 lg:gap-24
+            lg:grid-cols-2
+            gap-16 lg:gap-20
             items-center
-            justify-center
             w-full
           "
         >
           {/* LEFT */}
-          <div className="flex justify-center lg:justify-start">
+          <div className="flex justify-center w-full">
             <motion.div
               variants={container}
               initial="hidden"
               animate="show"
               className="
-          flex flex-col
-          items-center lg:items-start
-          text-center lg:text-left
-          w-full
-        "
+                flex flex-col
+                items-center lg:items-start
+                text-center lg:text-left
+                w-full
+                max-w-[620px]
+              "
             >
               {/* Availability badge */}
               {/* <motion.div variants={item}>
@@ -258,13 +258,23 @@ export default function Hero() {
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
             className="
               order-1 lg:order-2
-              flex justify-center lg:justify-center"
+              flex justify-center
+              w-full
+            "
           >
             {/*
               Self-contained card — all decorative children stay inside
               the overflow-hidden wrapper.
             */}
-            <div className="relative w-[340px] h-[390px] sm:w-[350px] sm:h-[400px]">
+            <div
+              className="
+                relative
+                w-[280px] h-[330px]
+                sm:w-[320px] sm:h-[370px]
+                lg:w-[360px] lg:h-[410px]
+                shrink-0
+              "
+>
               {/* Main panel */}
               <div
                 className="w-full h-full rounded-[2rem]
