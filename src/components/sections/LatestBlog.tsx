@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, BookOpen, Clock } from 'lucide-react'
 import AnimatedSection from '@/components/ui/AnimatedSection'
+import Container from '@/components/ui/Container'
+import SectionLabel from '@/components/ui/SectionLabel'
 
 const posts = [
   {
@@ -29,23 +31,27 @@ const posts = [
 
 export default function LatestBlog() {
   return (
-    <section className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <AnimatedSection>
-          <div className="flex items-end justify-between mb-12">
+    <section className="section-tint py-24 lg:py-32">
+      <Container>
+
+        {/* Section header */}
+        <AnimatedSection className="mb-14">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#671372] dark:text-[#c44cf0] mb-2 flex items-center gap-2">
-                <BookOpen size={11} /> Writing
-              </p>
-              <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white">
+              <SectionLabel>
+                <BookOpen size={10} className="inline mr-1.5 -mt-px" />
+                Writing
+              </SectionLabel>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
                 Latest Posts
               </h2>
             </div>
             <Link href="/blog">
               <motion.span
                 whileHover={{ x: 3 }}
-                className="hidden md:flex items-center gap-1.5 text-sm font-medium
-                           text-[#671372] dark:text-[#c44cf0] cursor-pointer hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold
+                           text-[#671372] dark:text-[#c44cf0] cursor-pointer
+                           hover:underline underline-offset-2 shrink-0"
               >
                 All posts <ArrowRight size={14} />
               </motion.span>
@@ -53,41 +59,48 @@ export default function LatestBlog() {
           </div>
         </AnimatedSection>
 
-        <div className="space-y-3">
+        {/* Post list */}
+        <div className="flex flex-col gap-5 max-w-3xl">
           {posts.map((post, i) => (
             <AnimatedSection key={post.slug} delay={i * 0.1}>
               <Link href={`/blog/${post.slug}`}>
-                <motion.div
+                <motion.article
                   whileHover={{ x: 4 }}
-                  className="group flex items-center gap-5 p-6
+                  transition={{ duration: 0.2 }}
+                  className="group flex items-start gap-5 p-7
                              bg-white dark:bg-gray-900
                              border border-gray-100 dark:border-gray-800
                              rounded-3xl shadow-soft
-                             hover:shadow-medium hover:border-[#671372]/15 dark:hover:border-[#671372]/25
+                             hover:shadow-medium
+                             hover:border-[#671372]/12 dark:hover:border-[#671372]/22
                              transition-all duration-300 cursor-pointer"
                 >
-                  <div className="text-3xl flex-shrink-0">{post.emoji}</div>
+                  {/* Emoji */}
+                  <span className="text-3xl leading-none flex-shrink-0 mt-0.5" aria-hidden>
+                    {post.emoji}
+                  </span>
 
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-bold leading-snug
                                    text-gray-900 dark:text-white
                                    group-hover:text-[#671372] dark:group-hover:text-[#c44cf0]
-                                   transition-colors mb-1">
+                                   transition-colors mb-2">
                       {post.title}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mb-2">
+                    <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
                       {post.excerpt}
                     </p>
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="text-xs text-gray-400 dark:text-gray-500">{post.date}</span>
-                      <span className="text-gray-200 dark:text-gray-700">·</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                      <span className="text-gray-200 dark:text-gray-700" aria-hidden>·</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                         <Clock size={10} /> {post.readTime}
                       </span>
                       {post.tags.map((tag) => (
                         <span key={tag}
-                              className="px-2 py-0.5 rounded-full text-[10px] font-medium
-                                         bg-[#671372]/10 dark:bg-[#671372]/20
+                              className="px-3 py-1 rounded-full text-[11px] font-medium
+                                         bg-[#671372]/09 dark:bg-[#671372]/18
                                          text-[#671372] dark:text-[#c44cf0]">
                           {tag}
                         </span>
@@ -95,19 +108,21 @@ export default function LatestBlog() {
                     </div>
                   </div>
 
+                  {/* Arrow */}
                   <ArrowRight
                     size={15}
-                    className="text-gray-300 dark:text-gray-600
+                    className="flex-shrink-0 mt-1 text-gray-300 dark:text-gray-600
                                group-hover:text-[#671372] dark:group-hover:text-[#c44cf0]
-                               flex-shrink-0 transition-colors duration-200
-                               group-hover:translate-x-1"
+                               group-hover:translate-x-1
+                               transition-all duration-200"
                   />
-                </motion.div>
+                </motion.article>
               </Link>
             </AnimatedSection>
           ))}
         </div>
-      </div>
+
+      </Container>
     </section>
   )
 }

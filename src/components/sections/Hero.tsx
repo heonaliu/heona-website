@@ -1,102 +1,146 @@
-'use client'
+"use client";
 
-import React from 'react'
-import Link from 'next/link'
-import { motion, type Variants } from 'framer-motion'
-import { ArrowRight, Sparkles, Code2, Palette, Hammer, Terminal } from 'lucide-react'
+import React from "react";
+import Link from "next/link";
+import { motion, type Variants } from "framer-motion";
+import {
+  ArrowRight,
+  Sparkles,
+  Code2,
+  Palette,
+  Hammer,
+  Terminal,
+  Github,
+  Mail,
+} from "lucide-react";
+import Container from "@/components/ui/Container";
 
-const stagger: Variants = {
+/* ─── Animation variants ─────────────────────────── */
+const container: Variants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.25 } },
-}
-
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.2 } },
+};
 const item: Variants = {
-  hidden:  { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: 'easeOut' } },
-}
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+};
 
+/* ─── Data ───────────────────────────────────────── */
 const roles = [
-  { Icon: Code2,    label: 'Developer' },
-  { Icon: Palette,  label: 'Artist'    },
-  { Icon: Hammer,   label: 'Builder'   },
-]
+  { Icon: Code2, label: "Developer" },
+  { Icon: Palette, label: "Artist" },
+  { Icon: Hammer, label: "Builder" },
+];
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-
-      {/* ── Background ── */}
-      <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-white dark:bg-[#0d0d14]" />
-        <div className="bg-mesh-gradient absolute inset-0 opacity-70 dark:opacity-50" />
-
-        {/* blobs */}
+    <section
+      className="
+    section-white layout-safe relative flex items-center
+    min-h-screen
+    pt-32 pb-24
+    overflow-x-hidden
+  "
+    >
+      {/* Background decoration — contained, never overflows */}
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        aria-hidden
+      >
+        <div className="absolute inset-0 bg-mesh-gradient opacity-60 dark:opacity-40" />
         <motion.div
-          animate={{ scale: [1, 1.12, 1], x: [0, 24, 0], y: [0, -16, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-24 right-[20%] w-72 h-72 rounded-full bg-[#671372]/[0.14] dark:bg-[#671372]/[0.09] blur-3xl"
+          animate={{ scale: [1, 1.1, 1], x: [0, 20, 0], y: [0, -15, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full
+                     bg-[#671372]/10 dark:bg-[#671372]/08 blur-3xl"
         />
         <motion.div
-          animate={{ scale: [1.1, 1, 1.1], x: [0, -18, 0], y: [0, 24, 0] }}
-          transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute bottom-32 left-[15%] w-64 h-64 rounded-full bg-[#8B1D9F]/[0.10] dark:bg-[#8B1D9F]/[0.07] blur-3xl"
+          animate={{ scale: [1.1, 1, 1.1], x: [0, -15, 0], y: [0, 20, 0] }}
+          transition={{
+            duration: 14,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 3,
+          }}
+          className="absolute -bottom-48 -left-24 w-[400px] h-[400px] rounded-full
+                     bg-[#8B1D9F]/08 dark:bg-[#8B1D9F]/06 blur-3xl"
         />
-
-        {/* dot grid */}
+        {/* Dot grid */}
         <div
-          className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.022] dark:opacity-[0.035]"
           style={{
-            backgroundImage: 'radial-gradient(circle, #671372 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
+            backgroundImage:
+              "radial-gradient(circle, #671372 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
           }}
         />
       </div>
 
-      {/* ── Content ── */}
-      <div className="w-full max-w-6xl mx-auto px-6 pt-32 pb-24">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-
-          {/* ─ Left: copy ─ */}
+      <Container>
+        <div
+          className="
+    grid grid-cols-1 lg:grid-cols-2
+    gap-20 lg:gap-28
+    items-center
+  "
+        >
+          {/* ── Left column: copy ── */}
           <motion.div
-            variants={stagger}
+            variants={container}
             initial="hidden"
-            animate="visible"
-            className="order-2 lg:order-1"
+            animate="show"
+            className="order-2 lg:order-1 flex flex-col items-start"
           >
-            {/* Badge */}
-            <motion.div variants={item} className="inline-flex items-center gap-2 mb-7">
-              <span className="flex items-center gap-2 px-4 py-2 rounded-full
-                               bg-[#671372]/10 dark:bg-[#671372]/20
-                               border border-[#671372]/20 dark:border-[#671372]/30
-                               text-[#671372] dark:text-[#c44cf0] text-xs font-semibold">
+            {/* Availability badge */}
+            <motion.div variants={item}>
+              <span
+                className="inline-flex items-center gap-2 px-4 py-2 mb-8
+                               rounded-full border
+                               bg-[#671372]/08 border-[#671372]/18
+                               dark:bg-[#671372]/15 dark:border-[#671372]/28
+                               text-[#671372] dark:text-[#c44cf0]
+                               text-sm font-semibold"
+              >
                 <Sparkles size={11} />
                 Open to opportunities
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </span>
             </motion.div>
 
-            {/* Heading */}
+            {/* Headline */}
             <motion.h1
               variants={item}
-              className="text-6xl md:text-7xl font-extrabold leading-[1.03] tracking-tight
-                         text-gray-900 dark:text-white mb-5"
+              className="
+                text-5xl
+                sm:text-6xl
+                lg:text-[5.5rem]
+                font-extrabold
+                tracking-tight
+                leading-[0.98]
+                max-w-[11ch]
+                text-gray-900 dark:text-white
+                mb-6
+              "
             >
-              Hi, I&apos;m{' '}
-              <span className="gradient-text">Heona</span>
+              Hi, I&apos;m <span className="gradient-text">Heona</span>
             </motion.h1>
 
-            {/* Roles */}
+            {/* Role chips */}
             <motion.div variants={item} className="flex flex-wrap gap-2 mb-6">
               {roles.map(({ Icon, label }) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5
+                             rounded-full border
                              bg-white dark:bg-gray-800
-                             border border-gray-200 dark:border-gray-700
-                             text-sm font-medium text-gray-700 dark:text-gray-300
+                             border-gray-200 dark:border-gray-700
+                             text-[15px] font-medium text-gray-700 dark:text-gray-300
                              shadow-soft"
                 >
-                  <Icon size={12} className="text-[#671372] dark:text-[#c44cf0]" />
+                  <Icon
+                    size={12}
+                    className="text-[#671372] dark:text-[#c44cf0]"
+                  />
                   {label}
                 </span>
               ))}
@@ -105,50 +149,54 @@ export default function Hero() {
             {/* Bio */}
             <motion.p
               variants={item}
-              className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed mb-9 max-w-[44ch]"
+              className="
+                text-lg sm:text-xl
+                leading-[1.9]
+                text-gray-600 dark:text-gray-400
+                mb-12
+                max-w-xl
+              "
             >
               I build things for the web, create digital art, and explore the
-              intersection where engineering meets creativity. CS student — driven
-              by curiosity and a love of thoughtful design.
+              intersection where engineering meets creativity. CS student —
+              driven by curiosity and a love of thoughtful design.
             </motion.p>
 
             {/* CTAs */}
-            <motion.div variants={item} className="flex flex-wrap gap-3">
+            <motion.div variants={item} className="flex flex-wrap gap-3 mb-12">
               <Link href="/projects">
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-full
+                  className="flex items-center gap-2 px-8 py-4 rounded-full
                              bg-[#671372] hover:bg-[#8B1D9F]
-                             text-white text-sm font-semibold
+                             text-white text-[15px] font-semibold
                              shadow-purple-lg transition-all duration-200"
                 >
                   View Projects <ArrowRight size={14} />
                 </motion.button>
               </Link>
-
               <Link href="/blog">
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-2 px-7 py-3.5 rounded-full
                              bg-white dark:bg-gray-800
                              border border-gray-200 dark:border-gray-700
-                             text-gray-800 dark:text-gray-200 text-sm font-semibold
+                             text-gray-800 dark:text-gray-200 text-[15px] font-semibold
                              shadow-soft hover:shadow-medium transition-all duration-200"
                 >
                   Read Blog
                 </motion.button>
               </Link>
-
               <Link href="/contact">
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -1 }}
+                  whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   className="flex items-center gap-2 px-7 py-3.5 rounded-full
-                             border border-[#671372]/25 dark:border-[#671372]/35
-                             text-[#671372] dark:text-[#c44cf0] text-sm font-semibold
-                             hover:bg-[#671372]/5 dark:hover:bg-[#671372]/10
+                             border border-[#671372]/22 dark:border-[#671372]/32
+                             text-[#671372] dark:text-[#c44cf0] text-[15px] font-semibold
+                             hover:bg-[#671372]/06 dark:hover:bg-[#671372]/10
                              transition-all duration-200"
                 >
                   Contact Me
@@ -156,140 +204,192 @@ export default function Hero() {
               </Link>
             </motion.div>
 
-            {/* Stats */}
+            {/* Stats row */}
             <motion.div
               variants={item}
-              className="flex items-center gap-10 mt-12 pt-8
-                         border-t border-gray-100 dark:border-gray-800"
+              className="flex items-center gap-12 sm:gap-16
+                         pt-10 border-t border-gray-100 dark:border-gray-800 w-full"
             >
               {[
-                { value: '10+', label: 'Projects Built' },
-                { value: '3+',  label: 'Years Coding'  },
-                { value: '∞',   label: 'Things to Learn' },
+                { value: "10+", label: "Projects Built" },
+                { value: "3+", label: "Years Coding" },
+                { value: "∞", label: "Things to Learn" },
               ].map(({ value, label }) => (
                 <div key={label}>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">
                     {value}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
+                    {label}
+                  </p>
                 </div>
               ))}
             </motion.div>
           </motion.div>
 
-          {/* ─ Right: visual card ─ */}
-          <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-              className="relative"
+          {/* ── Right column: visual card ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+            className="
+              order-1 lg:order-2
+              flex justify-center lg:justify-center"
+          >
+            {/*
+              Self-contained card — all decorative children stay inside
+              the overflow-hidden wrapper.
+            */}
+            <div
+              className="relative w-[340px] h-[390px] sm:w-[390px] sm:h-[440px]"
             >
-              {/* Main card */}
-              <div className="relative w-72 h-72 md:w-80 md:h-80">
-
-                {/* Floating icon cards */}
-                <motion.div
-                  animate={{ y: [-6, 6, -6] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute -top-5 -right-5 w-20 h-20
-                             bg-white dark:bg-gray-800
-                             border border-gray-100 dark:border-gray-700
-                             rounded-2xl shadow-medium
-                             flex items-center justify-center"
+              {/* Main panel */}
+              <div
+                className="w-full h-full rounded-[2rem]
+                              bg-gradient-to-br
+                              from-[#671372]/12 via-[#8B1D9F]/08 to-[#c44cf0]/06
+                              dark:from-[#671372]/22 dark:via-[#8B1D9F]/14 dark:to-[#c44cf0]/10
+                              border border-[#671372]/10 dark:border-[#671372]/20
+                              shadow-large overflow-hidden
+                              flex flex-col items-center justify-center gap-4 p-8"
+              >
+                {/* Avatar */}
+                <div
+                  className="w-20 h-20 rounded-full bg-[#671372]
+                                flex items-center justify-center shadow-purple-lg flex-shrink-0"
                 >
-                  <Code2 size={26} className="text-[#671372] dark:text-[#c44cf0]" />
-                </motion.div>
-
-                <motion.div
-                  animate={{ y: [6, -6, 6] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                  className="absolute -bottom-3 -left-7 w-16 h-16
-                             bg-white dark:bg-gray-800
-                             border border-gray-100 dark:border-gray-700
-                             rounded-2xl shadow-medium
-                             flex items-center justify-center"
-                >
-                  <Palette size={20} className="text-[#671372] dark:text-[#c44cf0]" />
-                </motion.div>
-
-                {/* Centre avatar */}
-                <div className="w-full h-full rounded-[2rem] overflow-hidden
-                                bg-gradient-to-br from-[#671372]/15 via-[#8B1D9F]/10 to-[#c44cf0]/8
-                                dark:from-[#671372]/25 dark:via-[#8B1D9F]/15 dark:to-[#c44cf0]/10
-                                border border-[#671372]/10 dark:border-[#671372]/20
-                                shadow-large flex items-center justify-center">
-                  <div className="text-center space-y-3 px-6">
-                    {/* Static monogram */}
-                    <div className="w-20 h-20 mx-auto rounded-full bg-[#671372]
-                                    flex items-center justify-center shadow-purple-lg">
-                      <Terminal size={28} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-gray-800 dark:text-gray-100">
-                        Heona Liu
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        CS Student & Digital Artist
-                      </p>
-                    </div>
-                  </div>
+                  <Terminal size={30} className="text-white" />
                 </div>
 
-                {/* Status badge */}
-                <motion.div
-                  animate={{ y: [-3, 3, -3] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                  className="absolute right-[-60px] top-1/2 -translate-y-1/2
-                             bg-white dark:bg-gray-800
-                             border border-gray-100 dark:border-gray-700
-                             rounded-2xl px-3.5 py-2.5 shadow-medium whitespace-nowrap"
-                >
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Currently</p>
-                  <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
-                    🎵 Making art
+                <div className="text-center">
+                  <p className="text-base font-bold text-gray-800 dark:text-gray-100">
+                    Heona Liu
                   </p>
-                </motion.div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    CS Student &amp; Digital Artist
+                  </p>
+                </div>
+
+                {/* Social row inside card */}
+                <div className="flex gap-2 mt-2">
+                  {[
+                    { Icon: Github, href: "https://github.com/heonaliu" },
+                    { Icon: Mail, href: "mailto:heonaliu@gmail.com" },
+                    { Icon: Palette, href: "/art" },
+                  ].map(({ Icon, href }) => (
+                    <a
+                      key={href}
+                      href={href}
+                      target={href.startsWith("http") ? "_blank" : undefined}
+                      rel={
+                        href.startsWith("http")
+                          ? "noopener noreferrer"
+                          : undefined
+                      }
+                      className="w-9 h-9 rounded-full
+                                 bg-white/60 dark:bg-white/10
+                                 border border-white/40 dark:border-white/10
+                                 flex items-center justify-center
+                                 text-gray-600 dark:text-gray-300
+                                 hover:bg-[#671372] hover:text-white hover:border-[#671372]
+                                 transition-all duration-200"
+                    >
+                      <Icon size={14} />
+                    </a>
+                  ))}
+                </div>
+
+                {/* Keyboard shortcut hint */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 2 }}
+                  className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500 mt-1"
+                >
+                  <kbd
+                    className="px-1.5 py-0.5 rounded bg-white/70 dark:bg-white/10
+                                   font-mono text-[10px] text-gray-500 dark:text-gray-400
+                                   border border-gray-200 dark:border-gray-700"
+                  >
+                    ⌘K
+                  </kbd>
+                  quick search
+                </motion.p>
               </div>
 
-              {/* ⌘K hint */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 2 }}
-                className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap
-                           flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500"
+              {/* Decorative floating chips — outside main panel but within 320/360px container */}
+              <motion.div
+                animate={{ y: [-5, 5, -5] }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="absolute -top-5 -right-5
+                           bg-white dark:bg-gray-800
+                           border border-gray-100 dark:border-gray-700
+                           rounded-2xl px-5 py-3 shadow-medium z-10"
               >
-                <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800
-                                font-mono text-[10px] text-gray-500 dark:text-gray-400">
-                  ⌘K
-                </kbd>
-                to search
-              </motion.p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
+                <div className="flex items-center gap-2">
+                  <Code2
+                    size={14}
+                    className="text-[#671372] dark:text-[#c44cf0]"
+                  />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    TypeScript
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  Favourite language
+                </p>
+              </motion.div>
 
-      {/* Scroll indicator */}
+              <motion.div
+                animate={{ y: [5, -5, 5] }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1.2,
+                }}
+                className="absolute -bottom-5 -left-5
+                           bg-white dark:bg-gray-800
+                           border border-gray-100 dark:border-gray-700
+                           rounded-2xl px-5 py-3 shadow-medium z-10"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px]">🎵</span>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    Making art
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  Currently
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </Container>
+
+      {/* Scroll cue */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.6 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        transition={{ delay: 1.8 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2
+                   flex flex-col items-center gap-2"
+        aria-hidden
       >
         <motion.div
-          animate={{ y: [0, 7, 0] }}
+          animate={{ y: [0, 6, 0] }}
           transition={{ duration: 1.6, repeat: Infinity }}
-          className="w-5 h-8 border-2 border-gray-300 dark:border-gray-700 rounded-full
-                     flex items-start justify-center pt-1.5"
+          className="w-5 h-8 border-2 border-gray-300 dark:border-gray-700
+                     rounded-full flex items-start justify-center pt-1.5"
         >
           <div className="w-1 h-1.5 bg-[#671372] dark:bg-[#c44cf0] rounded-full" />
         </motion.div>
-        <span className="text-[9px] uppercase tracking-[0.18em] text-gray-400 dark:text-gray-600">
-          Scroll
-        </span>
       </motion.div>
     </section>
-  )
+  );
 }

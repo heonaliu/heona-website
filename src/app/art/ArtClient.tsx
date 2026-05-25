@@ -4,6 +4,8 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight } from 'lucide-react'
 import AnimatedSection from '@/components/ui/AnimatedSection'
+import Container from '@/components/ui/Container'
+import SectionLabel from '@/components/ui/SectionLabel'
 
 const artworks = [
   {
@@ -89,123 +91,142 @@ export default function ArtClient() {
   const goPrev = () => { if (currentIndex > 0) setSelected(artworks[currentIndex - 1]) }
 
   return (
-    <div className="min-h-screen pt-28 pb-20">
+    <div className="min-h-screen layout-safe">
 
-      {/* ── Header ── */}
-      <section className="max-w-6xl mx-auto px-6 mb-14">
-        <AnimatedSection>
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#671372] dark:text-[#c44cf0] mb-3">
-            Creative Work
-          </p>
-          <h1 className="text-5xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight">
-            Art Gallery
-          </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
-            Digital illustrations, character designs, and creative experiments.
-            Click any piece for a closer look.
-          </p>
-        </AnimatedSection>
-      </section>
-
-      {/* ── Filter tags ── */}
-      <section className="max-w-6xl mx-auto px-6 mb-10">
-        <AnimatedSection>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <motion.button
-                key={tag}
-                onClick={() => setFilter(tag)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  filter === tag
-                    ? 'bg-[#671372] text-white shadow-purple-lg'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
-                }`}
-              >
-                {tag}
-              </motion.button>
-            ))}
-          </div>
-        </AnimatedSection>
-      </section>
-
-      {/* ── Masonry gallery ── */}
-      <section className="max-w-6xl mx-auto px-6 mb-24">
-        <div className="masonry">
-          <AnimatePresence>
-            {filtered.map((art, i) => (
-              <motion.div
-                key={art.id}
-                layout
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                transition={{ duration: 0.35, delay: i * 0.04 }}
-                onClick={() => setSelected(art)}
-                className="art-card relative rounded-3xl overflow-hidden cursor-pointer"
-                style={{ aspectRatio: i % 3 === 0 ? '4/5' : i % 3 === 1 ? '1/1' : '4/3' }}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${art.gradient}`} />
-                <div
-                  className="absolute inset-0 opacity-[0.18]"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                    backgroundSize: '18px 18px',
-                  }}
-                />
-
-                {/* hover overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
-                  <div className="flex flex-col items-center gap-1.5 text-white">
-                    <ZoomIn size={22} />
-                    <span className="text-sm font-semibold">{art.title}</span>
-                    <span className="text-xs opacity-75">{art.medium}</span>
-                  </div>
-                </div>
-
-                {/* bottom label */}
-                <div className="absolute bottom-0 left-0 right-0 p-4
-                                bg-gradient-to-t from-black/65 to-transparent
-                                translate-y-full hover:translate-y-0 transition-transform duration-300">
-                  <p className="text-white text-sm font-semibold">{art.title}</p>
-                  <p className="text-white/65 text-xs">{art.year}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </section>
-
-      {/* ── Art journey ── */}
-      <section className="bg-gray-50 dark:bg-gray-900/40 py-20 px-6">
-        <div className="max-w-3xl mx-auto">
+      {/* ══ Hero ══════════════════════════════════════════ */}
+      <section className="section-white pt-32 pb-14 lg:pt-40 lg:pb-20">
+        <Container>
           <AnimatedSection>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Art Journey</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-12 leading-relaxed">
+            <SectionLabel>Creative Work</SectionLabel>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
+                           leading-[1.1] tracking-tight
+                           text-gray-900 dark:text-white mb-4">
+              Art Gallery
+            </h1>
+            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
+              Digital illustrations, character designs, and creative experiments.
+              Click any piece for a closer look.
+            </p>
+          </AnimatedSection>
+        </Container>
+      </section>
+
+      {/* ══ Filter Tags ═══════════════════════════════════ */}
+      <section className="section-tint py-8">
+        <Container>
+          <AnimatedSection>
+            <div className="flex flex-wrap gap-2">
+              {allTags.map((tag) => (
+                <motion.button
+                  key={tag}
+                  onClick={() => setFilter(tag)}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    filter === tag
+                      ? 'bg-[#671372] text-white shadow-purple-lg'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+                  }`}
+                >
+                  {tag}
+                </motion.button>
+              ))}
+            </div>
+          </AnimatedSection>
+        </Container>
+      </section>
+
+      {/* ══ Gallery Grid ══════════════════════════════════ */}
+      <section className="section-white py-16 lg:py-24">
+        <Container>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+            <AnimatePresence>
+              {filtered.map((art, i) => (
+                <motion.div
+                  key={art.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.92 }}
+                  transition={{ duration: 0.35, delay: i * 0.04 }}
+                  onClick={() => setSelected(art)}
+                  className="group relative h-[280px] rounded-3xl overflow-hidden cursor-pointer
+                             shadow-soft hover:shadow-purple-lg transition-shadow duration-300"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${art.gradient}`} />
+                  <div
+                    className="absolute inset-0 opacity-[0.18]"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                      backgroundSize: '18px 18px',
+                    }}
+                  />
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45
+                                  transition-all duration-300
+                                  flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="flex flex-col items-center gap-2 text-white">
+                      <ZoomIn size={22} />
+                      <span className="text-sm font-semibold">{art.title}</span>
+                      <span className="text-xs opacity-75">{art.medium}</span>
+                    </div>
+                  </div>
+
+                  {/* Purple border on hover */}
+                  <div className="absolute inset-0 rounded-3xl border-2 border-[#671372]
+                                  opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
+
+                  {/* Bottom label */}
+                  <div className="absolute inset-x-0 bottom-0 p-4
+                                  bg-gradient-to-t from-black/65 to-transparent
+                                  translate-y-full group-hover:translate-y-0
+                                  transition-transform duration-300 z-20">
+                    <p className="text-white text-sm font-semibold leading-none">{art.title}</p>
+                    <p className="text-white/65 text-xs mt-1">{art.year}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </Container>
+      </section>
+
+      {/* ══ Art Journey ═══════════════════════════════════ */}
+      <section className="section-subtle py-24 lg:py-32">
+        <Container>
+          <AnimatedSection className="mb-14">
+            <SectionLabel>Background</SectionLabel>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
+              Art Journey
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md leading-relaxed">
               How programming and art connect for me — two ways of making things that weren&apos;t there before.
             </p>
           </AnimatedSection>
 
-          <div className="relative">
-            <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-[#671372] to-transparent" />
-            <div className="space-y-8 pl-1">
+          <div className="max-w-2xl relative">
+            {/* Vertical rule */}
+            <div className="absolute left-4 top-6 bottom-6 w-px
+                            bg-gradient-to-b from-[#671372] via-[#8B1D9F]/50 to-transparent" />
+
+            <div className="flex flex-col gap-7">
               {artJourney.map(({ year, milestone }, i) => (
                 <AnimatedSection key={year} delay={i * 0.08} direction="left">
                   <div className="flex gap-6">
                     <div className="relative z-10 w-8 h-8 rounded-full bg-[#671372]
                                     flex items-center justify-center flex-shrink-0 shadow-purple-lg mt-0.5"
-                         style={{ marginLeft: '-4px' }}>
+                         style={{ marginLeft: '0px' }}>
                       <div className="w-2 h-2 rounded-full bg-white" />
                     </div>
-                    <div className="flex-1 pb-4">
+                    <div className="flex-1 pb-2">
                       <span className="text-xs font-mono font-semibold
                                        text-[#671372] dark:text-[#c44cf0]
-                                       bg-[#671372]/10 dark:bg-[#671372]/20
+                                       bg-[#671372]/09 dark:bg-[#671372]/18
                                        px-2.5 py-1 rounded-full">
                         {year}
                       </span>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 leading-relaxed">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2.5 leading-relaxed">
                         {milestone}
                       </p>
                     </div>
@@ -215,12 +236,12 @@ export default function ArtClient() {
             </div>
           </div>
 
-          <AnimatedSection delay={0.3}>
-            <div className="mt-14 p-8
-                            bg-white dark:bg-gray-800
-                            border border-gray-100 dark:border-gray-700
+          <AnimatedSection delay={0.3} className="mt-14 max-w-2xl">
+            <div className="p-8
+                            bg-white dark:bg-gray-900
+                            border border-gray-100 dark:border-gray-800
                             rounded-3xl shadow-soft">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
                 💭 On the connection between code and art
               </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
@@ -232,10 +253,10 @@ export default function ArtClient() {
               </p>
             </div>
           </AnimatedSection>
-        </div>
+        </Container>
       </section>
 
-      {/* ── Lightbox modal ── */}
+      {/* ══ Lightbox Modal ════════════════════════════════ */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -256,7 +277,7 @@ export default function ArtClient() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Art display */}
-              <div className={`relative w-full aspect-[4/3] bg-gradient-to-br ${selected.gradient} flex items-center justify-center`}>
+              <div className={`relative w-full aspect-[4/3] bg-gradient-to-br ${selected.gradient} rounded-t-[2rem] flex items-center justify-center overflow-hidden`}>
                 <div
                   className="absolute inset-0 opacity-[0.18]"
                   style={{
@@ -273,7 +294,7 @@ export default function ArtClient() {
                   className="absolute left-3 top-1/2 -translate-y-1/2
                              w-9 h-9 rounded-full bg-black/30 hover:bg-black/50
                              flex items-center justify-center text-white
-                             disabled:opacity-30 transition-colors"
+                             disabled:opacity-30 transition-colors z-20"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -283,7 +304,7 @@ export default function ArtClient() {
                   className="absolute right-3 top-1/2 -translate-y-1/2
                              w-9 h-9 rounded-full bg-black/30 hover:bg-black/50
                              flex items-center justify-center text-white
-                             disabled:opacity-30 transition-colors"
+                             disabled:opacity-30 transition-colors z-20"
                 >
                   <ChevronRight size={18} />
                 </button>

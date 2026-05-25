@@ -46,6 +46,7 @@ html {
   scroll-behavior: smooth;
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -271,4 +272,74 @@ body {
 .dark .modal-card {
   background: #111827;
   box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+}
+
+/* ─── Section background variants ─────────────────── */
+/* Use on alternating sections for subtle visual rhythm */
+.section-white   { background: #ffffff; }
+.section-tint    { background: #faf5ff; }   /* barely-there lavender */
+.section-subtle  { background: #f9fafb; }   /* lightest gray         */
+
+.dark .section-white  { background: #0d0d14; }
+.dark .section-tint   { background: #100a18; }
+.dark .section-subtle { background: #0f111a; }
+
+/* ─── Layout overflow guard ────────────────────────── */
+.layout-safe {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ─── Prose width constraint ───────────────────────── */
+.prose-width { max-width: 65ch; }
+
+/* ─── Card base ─────────────────────────────────────── */
+.card-base {
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.dark .card-base {
+  background: #111827;
+  border-color: #1f2937;
+}
+.card-base:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-3px);
+  border-color: rgba(103, 19, 114, 0.15);
+}
+.dark .card-base:hover {
+  border-color: rgba(103, 19, 114, 0.25);
+}
+
+/* ─── Skill pill ────────────────────────────────────── */
+.skill-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  line-height: 1.4;
+}
+.skill-pill:hover {
+  border-color: rgba(103,19,114,0.3);
+  color: #671372;
+}
+.dark .skill-pill {
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
+}
+.dark .skill-pill:hover {
+  border-color: rgba(196,76,240,0.35);
+  color: #c44cf0;
 }

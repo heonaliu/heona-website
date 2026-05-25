@@ -48,8 +48,8 @@ export default function Navbar() {
       >
         <nav
           className={`
-            w-full max-w-3xl flex items-center justify-between
-            px-5 py-3 rounded-full
+            w-full max-w-4xl flex items-center justify-between
+            px-6 py-3.5 rounded-full
             glass
             transition-shadow duration-300
             ${scrolled ? 'shadow-medium' : 'shadow-soft'}
@@ -69,7 +69,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop links */}
-          <ul className="hidden md:flex items-center gap-0.5">
+          <ul className="hidden md:flex items-center gap-1.5">
             {navLinks.map(({ href, label, Icon }) => {
               const active = isActive(href)
               return (
@@ -77,7 +77,7 @@ export default function Navbar() {
                   <Link
                     href={href}
                     className={`
-                      relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium
+                      relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium
                       transition-colors duration-200
                       ${active
                         ? 'text-[#671372] dark:text-[#c44cf0]'
@@ -93,7 +93,7 @@ export default function Navbar() {
                       />
                     )}
                     <Icon
-                      size={13.5}
+                      size={14}
                       className={`relative z-10 flex-shrink-0 ${active ? 'text-[#671372] dark:text-[#c44cf0]' : ''}`}
                     />
                     <span className="relative z-10">{label}</span>
@@ -104,7 +104,7 @@ export default function Navbar() {
           </ul>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <ThemeToggle />
 
             {isAdmin && (
