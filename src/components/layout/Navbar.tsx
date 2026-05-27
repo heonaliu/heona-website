@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, User, Palette, Code2, BookOpen, Mail,
-  Menu, X, Sparkles,
+  Menu, X, Sparkles, ShieldX,
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useAuth } from '@/context/AuthContext'
@@ -24,7 +24,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { isAdmin, user, signInWithGoogle, signOutUser } = useAuth()
+  const { isAdmin, user, signInWithGoogle, signOutUser, unauthorizedAttempt, clearUnauthorizedAttempt } = useAuth()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -141,6 +141,37 @@ export default function Navbar() {
           </div>
         </nav>
       </motion.header>
+
+      {/* ─── Unauthorized access banner ─── */}
+      <AnimatePresence>
+        {unauthorizedAttempt && (
+          <motion.div
+            key="unauth-banner"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60]
+                       flex items-center gap-3
+                       px-5 py-3 rounded-2xl
+                       bg-red-50 dark:bg-red-950/80
+                       border border-red-200 dark:border-red-800
+                       shadow-large backdrop-blur-sm"
+          >
+            <ShieldX size={15} className="text-red-500 dark:text-red-400 flex-shrink-0" />
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              Unauthorized access — this account is not permitted.
+            </p>
+            <button
+              onClick={clearUnauthorizedAttempt}
+              className="ml-1 p-0.5 rounded-lg text-red-400 hover:text-red-600 dark:hover:text-red-200 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X size={13} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ─── Mobile drawer ─── */}
       <AnimatePresence>

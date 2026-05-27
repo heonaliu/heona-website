@@ -9,6 +9,8 @@ interface AuthContextType {
   user: User | null
   isAdmin: boolean
   loading: boolean
+  unauthorizedAttempt: boolean
+  clearUnauthorizedAttempt: () => void
   signInWithGoogle: () => Promise<void>
   signOutUser: () => Promise<void>
 }
@@ -17,6 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAdmin: false,
   loading: false,
+  unauthorizedAttempt: false,
+  clearUnauthorizedAttempt: () => {},
   signInWithGoogle: async () => {},
   signOutUser: async () => {},
 })
@@ -24,20 +28,15 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [unauthorizedAttempt, setUnauthorizedAttempt] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    // Lazy-load Firebase auth only on client
     let unsubscribe: (() => void) | undefined
 
     const initAuth = async () => {
       try {
         const { auth } = await import('@/lib/firebase')
-        if (!auth) {
-          setLoading(false)
-          return
-        }
+        if (!auth) { setLoading(false); return }
         const { onAuthStateChanged } = await import('firebase/auth')
         setLoading(true)
         unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -51,19 +50,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initAuth()
-    return () => {
-      if (unsubscribe) unsubscribe()
-    }
+    return () => { if (unsubscribe) unsubscribe() }
   }, [])
 
   const signInWithGoogle = async () => {
     try {
       const { auth, googleProvider } = await import('@/lib/firebase')
       if (!auth || !googleProvider) return
-      const { signInWithPopup } = await import('firebase/auth')
-      await signInWithPopup(auth, googleProvider)
-    } catch (error) {
-      console.error('Sign in error:', error)
+      const { signInWithPopup, signOut } = await import('firebase/auth')
+
+      const result = await signInWithPopup(auth, googleProvider)
+
+      // Block anyone who isn't the admin — sign them out immediately
+      if (result.user.email !== ADMIN_EMAIL) {
+        await signOut(auth)
+        setUnauthorizedAttempt(true)
+      }
+    } catch (error: any) {
+      // popup-closed-by-user is not an error worth surfacing
+      if (error?.code !== 'auth/popup-closed-by-user') {
+        console.error('Sign in error:', error)
+      }
     }
   }
 
@@ -81,7 +88,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.email === ADMIN_EMAIL
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, signInWithGoogle, signOutUser }}>
+    <AuthContext.Provider value={{
+      user,
+      isAdmin,
+      loading,
+      unauthorizedAttempt,
+      clearUnauthorizedAttempt: () => setUnauthorizedAttempt(false),
+      signInWithGoogle,
+      signOutUser,
+    }}>
       {children}
     </AuthContext.Provider>
   )

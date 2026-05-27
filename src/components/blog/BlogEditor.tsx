@@ -10,40 +10,64 @@ import remarkGfm from 'remark-gfm'
 
 const AUTOSAVE_INTERVAL = 30000 // 30 seconds
 
-export default function BlogEditor() {
+interface Props {
+  /** Firestore document ID — when provided, editor is in edit mode */
+  postId?: string
+  initialTitle?: string
+  initialContent?: string
+  initialExcerpt?: string
+  initialTags?: string[]
+  initialSlug?: string
+}
+
+export default function BlogEditor({
+  postId,
+  initialTitle = '',
+  initialContent = '',
+  initialExcerpt = '',
+  initialTags = [],
+  initialSlug,
+}: Props) {
   const { isAdmin, user } = useAuth()
   const router = useRouter()
+  const isEditMode = Boolean(postId)
 
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [excerpt, setExcerpt] = useState('')
-  const [tags, setTags] = useState('')
-  const [emoji, setEmoji] = useState('✍️')
-  const [isDraft, setIsDraft] = useState(true)
+  const [title, setTitle]     = useState(initialTitle)
+  const [content, setContent] = useState(initialContent)
+  const [excerpt, setExcerpt] = useState(initialExcerpt)
+  const [tags, setTags]       = useState(initialTags.join(', '))
+  const [isDraft, setIsDraft] = useState(!isEditMode)
   const [preview, setPreview] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving]   = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const [saved, setSaved] = useState(false)
+  const [saved, setSaved]     = useState(false)
 
+  // ─── Save / Update draft ──────────────────────────────────
   const saveDraft = useCallback(async () => {
     if (!isAdmin || !title) return
     setSaving(true)
     try {
       const { db } = await import('@/lib/firebase')
       if (!db) throw new Error('Firestore not initialized')
-      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
-      await addDoc(collection(db, 'posts'), {
-        title,
-        content,
-        excerpt,
-        tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
-        emoji,
-        draft: true,
-        published: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        authorEmail: user?.email,
-      })
+      const { serverTimestamp } = await import('firebase/firestore')
+      const tagList = tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+
+      if (isEditMode && postId) {
+        const { doc, updateDoc } = await import('firebase/firestore')
+        await updateDoc(doc(db, 'posts', postId), {
+          title, content, excerpt, tags: tagList,
+          updatedAt: serverTimestamp(),
+        })
+      } else {
+        const { collection, addDoc } = await import('firebase/firestore')
+        await addDoc(collection(db, 'posts'), {
+          title, content, excerpt, tags: tagList,
+          draft: true, published: false,
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          authorEmail: user?.email,
+        })
+      }
+
       setLastSaved(new Date())
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -52,38 +76,43 @@ export default function BlogEditor() {
     } finally {
       setSaving(false)
     }
-  }, [isAdmin, title, content, excerpt, tags, emoji, user])
+  }, [isAdmin, title, content, excerpt, tags, user, isEditMode, postId])
 
+  // ─── Publish ──────────────────────────────────────────────
   const publish = async () => {
     if (!isAdmin || !title || !content) return
     setSaving(true)
     try {
       const { db } = await import('@/lib/firebase')
       if (!db) throw new Error('Firestore not initialized')
-      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
-      const slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
+      const { serverTimestamp } = await import('firebase/firestore')
+      const tagList = tags.split(',').map((t: string) => t.trim()).filter(Boolean)
 
-      await addDoc(collection(db, 'posts'), {
-        slug,
-        title,
-        content,
-        excerpt,
-        tags: tags.split(',').map((t: string) => t.trim()).filter(Boolean),
-        emoji,
-        draft: false,
-        published: true,
-        publishedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        authorEmail: user?.email,
-      })
+      if (isEditMode && postId) {
+        const { doc, updateDoc } = await import('firebase/firestore')
+        await updateDoc(doc(db, 'posts', postId), {
+          title, content, excerpt, tags: tagList,
+          draft: false, published: true,
+          updatedAt: serverTimestamp(),
+        })
+        router.push(`/blog/${initialSlug}`)
+      } else {
+        const { collection, addDoc } = await import('firebase/firestore')
+        const slug = title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
 
-      router.push('/blog')
+        await addDoc(collection(db, 'posts'), {
+          slug, title, content, excerpt, tags: tagList,
+          draft: false, published: true,
+          publishedAt: serverTimestamp(), createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(), authorEmail: user?.email,
+        })
+        router.push(`/blog/${slug}`)
+      }
     } catch (e) {
       console.error('Publish error:', e)
     } finally {
@@ -124,6 +153,12 @@ export default function BlogEditor() {
           </button>
 
           <div className="flex items-center gap-3">
+            {isEditMode && (
+              <span className="text-xs px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+                Editing post
+              </span>
+            )}
+
             {lastSaved && (
               <span className="text-xs text-gray-400 flex items-center gap-1">
                 <Clock size={10} />
@@ -156,7 +191,7 @@ export default function BlogEditor() {
               className="flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
               <Save size={14} />
-              Save Draft
+              {isEditMode ? 'Save Changes' : 'Save Draft'}
             </button>
 
             <button
@@ -165,7 +200,7 @@ export default function BlogEditor() {
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm bg-[#671372] text-white font-semibold hover:bg-[#8B1D9F] shadow-purple-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={14} />
-              Publish
+              {isEditMode ? 'Update Post' : 'Publish'}
             </button>
           </div>
         </div>
@@ -175,13 +210,6 @@ export default function BlogEditor() {
           {/* Metadata bar */}
           <div className="border-b border-gray-100 dark:border-gray-800 p-6 grid md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3">
-              <input
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-                className="w-12 h-12 text-2xl text-center rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none"
-                maxLength={2}
-                placeholder="✍️"
-              />
               <div className="flex-1">
                 <label className="text-xs text-gray-400 block mb-1">Excerpt</label>
                 <input
@@ -203,17 +231,19 @@ export default function BlogEditor() {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3">
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <input
-                  type="checkbox"
-                  checked={isDraft}
-                  onChange={(e) => setIsDraft(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[#671372]"
-                />
-                Save as draft
-              </label>
-            </div>
+            {!isEditMode && (
+              <div className="flex items-center justify-end gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <input
+                    type="checkbox"
+                    checked={isDraft}
+                    onChange={(e) => setIsDraft(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#671372]"
+                  />
+                  Save as draft
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -263,7 +293,7 @@ const hello = 'world'
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Write in Markdown. Auto-saves every 30 seconds.
+          Write in Markdown.{isEditMode ? ' Changes are saved to the existing post.' : ' Auto-saves every 30 seconds.'}
         </p>
       </div>
     </div>

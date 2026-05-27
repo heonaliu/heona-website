@@ -114,19 +114,19 @@ export default function ProjectsClient() {
       </section>
 
       {/* ══ Filters ════════════════════════════════════════ */}
-      <section className="section-tint py-10">
+      <section className="section-tint py-3">
         <Container>
-          <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex flex-col sm:flex-row gap-3">
 
             {/* Search */}
             <AnimatedSection className="w-full sm:max-w-xs">
               <div className="relative">
-                <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search projects..."
-                  className="w-full pl-10 pr-10 py-3 rounded-2xl
+                  className="w-full pl-9 pr-9 py-2 rounded-xl
                              border border-gray-200 dark:border-gray-700
                              bg-white dark:bg-gray-900
                              text-sm text-gray-900 dark:text-white placeholder-gray-400
@@ -136,7 +136,7 @@ export default function ProjectsClient() {
                 {search && (
                   <button onClick={() => setSearch('')}
                           className="absolute right-3 top-1/2 -translate-y-1/2 p-1">
-                    <X size={13} className="text-gray-400" />
+                    <X size={12} className="text-gray-400" />
                   </button>
                 )}
               </div>
@@ -144,14 +144,14 @@ export default function ProjectsClient() {
 
             {/* Tags */}
             <AnimatedSection delay={0.05} className="flex-1">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {allTags.map((tag) => (
                   <motion.button
                     key={tag}
                     onClick={() => setActiveTag(tag)}
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                       activeTag === tag
                         ? 'bg-[#671372] text-white shadow-purple-lg'
                         : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'

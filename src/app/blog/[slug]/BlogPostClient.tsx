@@ -3,8 +3,9 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Clock, Calendar, PenLine, Tag } from 'lucide-react'
-import { MDXRemote } from 'next-mdx-remote/rsc'
+import { ArrowLeft, Clock, Calendar, PenLine, Tag, FileText } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useAuth } from '@/context/AuthContext'
 import Container from '@/components/ui/Container'
 import type { BlogPost } from '@/lib/blog'
@@ -45,9 +46,9 @@ export default function BlogPostClient({ post }: Props) {
               transition={{ delay: 0.1 }}
               className="mb-12"
             >
-              {post.emoji && (
-                <div className="text-5xl mb-6">{post.emoji}</div>
-              )}
+              <div className="w-14 h-14 rounded-2xl bg-[#671372]/10 dark:bg-[#671372]/20 flex items-center justify-center mb-6">
+                <FileText size={28} className="text-[#671372] dark:text-[#c44cf0]" />
+              </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
                              leading-[1.1] tracking-tight
@@ -123,7 +124,7 @@ export default function BlogPostClient({ post }: Props) {
                 prose-li:text-gray-700 dark:prose-li:text-gray-300
                 prose-hr:border-gray-200 dark:prose-hr:border-gray-800"
             >
-              <MDXRemote source={post.content} />
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
             </motion.article>
 
             {/* Footer */}
