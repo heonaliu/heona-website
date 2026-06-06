@@ -2,14 +2,17 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
+import { useAuth } from '@/context/AuthContext'
+import type { ArtworkOverride } from '@/lib/artworks-firestore'
 
-const artworks = [
+const staticArtworks = [
   {
-    id: 1,
+    id: '1',
     title: 'Purple Dreams',
     medium: 'Procreate',
     year: '2024',
@@ -19,7 +22,7 @@ const artworks = [
     tags: ['abstract', 'digital'],
   },
   {
-    id: 2,
+    id: '2',
     title: 'Ocean Flow',
     medium: 'Adobe Illustrator',
     year: '2024',
@@ -29,7 +32,7 @@ const artworks = [
     tags: ['vector', 'nature'],
   },
   {
-    id: 3,
+    id: '3',
     title: 'Character Sketch',
     medium: 'Procreate',
     year: '2023',
@@ -39,7 +42,7 @@ const artworks = [
     tags: ['character', 'concept art'],
   },
   {
-    id: 4,
+    id: '4',
     title: 'Neon City',
     medium: 'Photoshop',
     year: '2023',
@@ -49,7 +52,7 @@ const artworks = [
     tags: ['environment', 'sci-fi'],
   },
   {
-    id: 5,
+    id: '5',
     title: 'Minimalist Botanics',
     medium: 'Procreate',
     year: '2024',
@@ -59,7 +62,7 @@ const artworks = [
     tags: ['minimal', 'botanical'],
   },
   {
-    id: 6,
+    id: '6',
     title: 'Code & Canvas',
     medium: 'p5.js (generative)',
     year: '2024',
@@ -70,6 +73,9 @@ const artworks = [
   },
 ]
 
+type StaticArtwork = typeof staticArtworks[0]
+type Artwork = StaticArtwork & { imageUrl: string | null }
+
 const artJourney = [
   { year: '2018', milestone: 'First sketches with pencil and paper. Just doodles at first.' },
   { year: '2020', milestone: 'Discovered digital art. Got my first drawing tablet — game changer.' },
@@ -79,11 +85,264 @@ const artJourney = [
   { year: '2024', milestone: 'Integrating art and code more intentionally. Exploring interactive experiences.' },
 ]
 
-export default function ArtClient() {
-  const [selected, setSelected] = useState<typeof artworks[0] | null>(null)
-  const [filter, setFilter] = useState('all')
+// ─── Edit Artwork Modal ────────────────────────────────────────────────────────
+function EditArtworkModal({
+  art,
+  onClose,
+  onSuccess,
+}: {
+  art: Artwork
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const router = useRouter()
+  const [title, setTitle]            = useState(art.title)
+  const [year, setYear]              = useState(art.year)
+  const [reflection, setReflection]  = useState(art.reflection)
+  const [imageUrl, setImageUrl]      = useState(art.imageUrl ?? '')
+  const [tags, setTags]              = useState<string[]>(art.tags)
+  const [tagInput, setTagInput]      = useState('')
+  const [imgError, setImgError]  = useState(false)
+  const [saving, setSaving]      = useState(false)
+  const [error, setError]        = useState<string | null>(null)
 
-  const allTags = ['all', ...Array.from(new Set(artworks.flatMap((a) => a.tags)))]
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase()
+    if (t && !tags.includes(t)) setTags((prev) => [...prev, t])
+    setTagInput('')
+  }
+  const removeTag = (t: string) => setTags((prev) => prev.filter((x) => x !== t))
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { setError('Not signed in as admin.'); return }
+      const { saveArtworkOverrides } = await import('@/lib/artworks-firestore')
+      await saveArtworkOverrides(art.id, {
+        imageUrl:   imageUrl.trim()   || undefined,
+        title:      title.trim()      || undefined,
+        year:       year.trim()       || undefined,
+        reflection: reflection.trim() || undefined,
+        tags:       tags.length       ? tags : undefined,
+      })
+      router.refresh()
+      onSuccess()
+    } catch (e: any) {
+      const msg = e?.message || String(e)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — add art_images to your Firestore rules.')
+      } else {
+        setError(msg || 'Failed to save.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputCls = `w-full px-4 py-2.5 rounded-xl
+                    border border-gray-200 dark:border-gray-700
+                    bg-white dark:bg-gray-800
+                    text-sm text-gray-900 dark:text-white placeholder-gray-400
+                    focus:outline-none focus:ring-2 focus:ring-[#671372]/25
+                    focus:border-[#671372]/40 transition-all`
+  const labelCls = `block text-xs font-semibold uppercase tracking-wider
+                    text-gray-500 dark:text-gray-400 mb-1.5`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                 flex items-center justify-center px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+        className="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header preview */}
+        <div className={`relative w-full h-44 bg-gradient-to-br ${art.gradient}`}>
+          {imageUrl.trim() && !imgError && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl.trim()}
+              alt="preview"
+              onError={() => setImgError(true)}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/35 flex items-end p-5">
+            <div>
+              <p className="text-white/70 text-[10px] uppercase tracking-widest font-semibold mb-1">
+                Editing artwork
+              </p>
+              <p className="text-white font-bold text-lg leading-tight">{title || art.title}</p>
+              {year && <p className="text-white/65 text-xs mt-0.5">{year}</p>}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full
+                       bg-black/30 hover:bg-black/50 flex items-center justify-center
+                       text-white transition-colors"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Title */}
+          <div>
+            <label className={labelCls}>Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Artwork title"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Year */}
+          <div>
+            <label className={labelCls}>Year</label>
+            <input
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              placeholder="2024"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Artist's Note */}
+          <div>
+            <label className={labelCls}>Artist&apos;s Note</label>
+            <textarea
+              value={reflection}
+              onChange={(e) => setReflection(e.target.value)}
+              placeholder="Share your thoughts on this piece…"
+              rows={3}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className={labelCls}>Tags</label>
+            <div className="flex gap-2">
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                placeholder="e.g. abstract, nature…"
+                className={`${inputCls} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold
+                           bg-[#671372]/10 dark:bg-[#671372]/25
+                           text-[#671372] dark:text-[#c44cf0]
+                           hover:bg-[#671372]/20 dark:hover:bg-[#671372]/35
+                           transition-colors flex-shrink-0"
+              >
+                Add
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+                               bg-[#671372]/10 dark:bg-[#671372]/25
+                               text-[#671372] dark:text-[#c44cf0]"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(t)}
+                      className="hover:text-red-500 transition-colors ml-0.5"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Image URL */}
+          <div>
+            <label className={labelCls}>Image URL</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImgError(false) }}
+              placeholder="https://i.imgur.com/..."
+              className={inputCls}
+            />
+            {imgError && imageUrl.trim() && (
+              <p className="text-xs text-amber-500 mt-1">
+                Could not load image — check the URL. It will still be saved.
+              </p>
+            )}
+          </div>
+
+          {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full text-sm font-medium
+                         text-gray-600 dark:text-gray-400
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2.5 rounded-full text-sm font-semibold
+                         bg-[#671372] text-white hover:bg-[#8B1D9F]
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         transition-all shadow-purple-lg"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+export default function ArtClient({ overrides }: { overrides: Record<string, ArtworkOverride> }) {
+  const { isAdmin } = useAuth()
+
+  const artworks: Artwork[] = staticArtworks.map((a) => {
+    const o = overrides[a.id]
+    return {
+      ...a,
+      title:      o?.title      ?? a.title,
+      year:       o?.year       ?? a.year,
+      reflection: o?.reflection ?? a.reflection,
+      imageUrl:   o?.imageUrl   ?? null,
+      tags:       o?.tags       ?? a.tags,
+    }
+  })
+
+  const [selected, setSelected] = useState<Artwork | null>(null)
+  const [filter, setFilter]     = useState('all')
+  const [editing, setEditing]   = useState<Artwork | null>(null)
+
+  const allTags  = ['all', ...Array.from(new Set(artworks.flatMap((a) => a.tags)))]
   const filtered = filter === 'all' ? artworks : artworks.filter((a) => a.tags.includes(filter))
 
   const currentIndex = selected ? artworks.findIndex((a) => a.id === selected.id) : -1
@@ -153,14 +412,26 @@ export default function ArtClient() {
                   className="group relative h-[280px] rounded-3xl overflow-hidden cursor-pointer
                              shadow-soft hover:shadow-purple-lg transition-shadow duration-300"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${art.gradient}`} />
-                  <div
-                    className="absolute inset-0 opacity-[0.18]"
-                    style={{
-                      backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                      backgroundSize: '18px 18px',
-                    }}
-                  />
+                  {/* Background: real image or gradient */}
+                  {art.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={art.imageUrl}
+                      alt={art.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${art.gradient}`} />
+                      <div
+                        className="absolute inset-0 opacity-[0.18]"
+                        style={{
+                          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                          backgroundSize: '18px 18px',
+                        }}
+                      />
+                    </>
+                  )}
 
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45
@@ -185,6 +456,22 @@ export default function ArtClient() {
                     <p className="text-white text-sm font-semibold leading-none">{art.title}</p>
                     <p className="text-white/65 text-xs mt-1">{art.year}</p>
                   </div>
+
+                  {/* Admin edit button */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditing(art) }}
+                      title="Edit image"
+                      className="absolute top-2.5 right-2.5 z-30
+                                 w-7 h-7 rounded-full
+                                 bg-black/40 hover:bg-[#671372]
+                                 flex items-center justify-center
+                                 text-white opacity-0 group-hover:opacity-100
+                                 transition-all duration-200"
+                    >
+                      <PenLine size={13} />
+                    </button>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -206,7 +493,6 @@ export default function ArtClient() {
           </AnimatedSection>
 
           <div className="max-w-2xl relative">
-            {/* Vertical rule */}
             <div className="absolute left-4 top-6 bottom-6 w-px
                             bg-gradient-to-b from-[#671372] via-[#8B1D9F]/50 to-transparent" />
 
@@ -237,8 +523,7 @@ export default function ArtClient() {
           </div>
 
           <AnimatedSection delay={0.3} className="mt-14 max-w-2xl">
-            <div className="p-8
-                            bg-white dark:bg-gray-900
+            <div className="p-8 bg-white dark:bg-gray-900
                             border border-gray-100 dark:border-gray-800
                             rounded-3xl shadow-soft">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
@@ -277,15 +562,30 @@ export default function ArtClient() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Art display */}
-              <div className={`relative w-full aspect-[4/3] bg-gradient-to-br ${selected.gradient} rounded-t-[2rem] flex items-center justify-center overflow-hidden`}>
-                <div
-                  className="absolute inset-0 opacity-[0.18]"
-                  style={{
-                    backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                    backgroundSize: '18px 18px',
-                  }}
-                />
-                <p className="text-white/50 text-xs relative z-10">Artwork preview</p>
+              <div className={`relative w-full aspect-[4/3] rounded-t-[2rem] overflow-hidden
+                               bg-gradient-to-br ${selected.gradient}`}>
+                {selected.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selected.imageUrl}
+                    alt={selected.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <div
+                      className="absolute inset-0 opacity-[0.18]"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                        backgroundSize: '18px 18px',
+                      }}
+                    />
+                    <p className="absolute inset-0 flex items-center justify-center
+                                  text-white/50 text-xs">
+                      Artwork preview
+                    </p>
+                  </>
+                )}
 
                 {/* Navigation arrows */}
                 <button
@@ -308,6 +608,21 @@ export default function ArtClient() {
                 >
                   <ChevronRight size={18} />
                 </button>
+
+                {/* Admin edit button in lightbox */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditing(selected); setSelected(null) }}
+                    title="Edit image"
+                    className="absolute top-3 left-3 z-30
+                               flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                               bg-black/40 hover:bg-[#671372]
+                               text-white text-xs font-medium
+                               transition-all duration-200"
+                  >
+                    <PenLine size={12} /> Edit image
+                  </button>
+                )}
               </div>
 
               {/* Info */}
@@ -366,6 +681,17 @@ export default function ArtClient() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Artwork Modal ════════════════════════════ */}
+      <AnimatePresence>
+        {editing && (
+          <EditArtworkModal
+            art={editing}
+            onClose={() => setEditing(null)}
+            onSuccess={() => setEditing(null)}
+          />
         )}
       </AnimatePresence>
     </div>
