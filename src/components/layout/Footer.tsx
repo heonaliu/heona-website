@@ -3,12 +3,13 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Github, Linkedin, Mail, Heart, Sparkles } from 'lucide-react'
+import { Github, Linkedin, Mail, Heart, Sparkles, Youtube } from 'lucide-react'
 
 const socials = [
   { Icon: Github,   href: 'https://github.com/heonaliu',         label: 'GitHub'   },
-  { Icon: Linkedin, href: 'https://linkedin.com/in/heonaliu',    label: 'LinkedIn' },
+  { Icon: Linkedin, href: 'https://www.linkedin.com/in/heona-liu-3ab1b237a/',    label: 'LinkedIn' },
   { Icon: Mail,     href: 'mailto:heonaliu@gmail.com',           label: 'Email'    },
+  { Icon: Youtube,  href: 'https://www.youtube.com/@heonaliu',      label: 'YouTube'  },
 ]
 
 const pages = [

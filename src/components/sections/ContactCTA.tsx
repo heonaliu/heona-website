@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Mail, Github, Linkedin, ArrowRight, Sparkles } from 'lucide-react'
+import { Mail, Github, Linkedin, Youtube, ArrowRight, Sparkles } from 'lucide-react'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 
@@ -95,7 +95,8 @@ export default function ContactCTA() {
                 <div className="flex items-center gap-3">
                   {[
                     { Icon: Github,   href: 'https://github.com/heonaliu'     },
-                    { Icon: Linkedin, href: 'https://linkedin.com/in/heonaliu' },
+                    { Icon: Linkedin, href: 'https://www.linkedin.com/in/heona-liu-3ab1b237a/' },
+                    { Icon: Youtube,  href: 'https://www.youtube.com/@sleepymeilows'      },
                   ].map(({ Icon, href }) => (
                     <motion.a
                       key={href}

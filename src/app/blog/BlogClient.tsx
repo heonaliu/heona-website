@@ -16,7 +16,7 @@ interface Props {
   tags: string[]
 }
 
-export default function BlogClient({ posts, tags }: Props) {
+export default function BlogClient({ posts }: Props) {
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState('all')
   const { isAdmin } = useAuth()
@@ -98,32 +98,30 @@ export default function BlogClient({ posts, tags }: Props) {
               </div>
             </AnimatedSection>
 
-            {/* Tags */}
-            {tags.length > 0 && (
-              <AnimatedSection delay={0.05} className="flex-1">
-                <div className="flex flex-wrap gap-1.5">
-                  {['all', ...tags].map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => setActiveTag(tag)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                        activeTag === tag
-                          ? 'bg-[#671372] text-white shadow-purple-lg'
-                          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </AnimatedSection>
-            )}
+            {/* Tabs */}
+            <AnimatedSection delay={0.05} className="flex-1">
+              <div className="flex flex-wrap gap-1.5">
+                {['all', 'achievements', 'self growth', 'experiences'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTag(tab)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      activeTag === tab
+                        ? 'bg-[#671372] text-white shadow-purple-lg'
+                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </AnimatedSection>
           </div>
         </Container>
       </section>
 
       {/* ══ Posts ══════════════════════════════════════════ */}
-      <section className="section-white py-16 lg:py-24">
+      <section className="section-white py-10 lg:py-14">
         <Container>
           <div className="max-w-3xl">
             {filtered.length === 0 ? (

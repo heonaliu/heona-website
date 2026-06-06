@@ -137,7 +137,7 @@ export default function ArtClient() {
       </section>
 
       {/* ══ Gallery Grid ══════════════════════════════════ */}
-      <section className="section-white py-16 lg:py-24">
+      <section className="section-white py-10 lg:py-14">
         <Container>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
             <AnimatePresence>
@@ -193,7 +193,7 @@ export default function ArtClient() {
       </section>
 
       {/* ══ Art Journey ═══════════════════════════════════ */}
-      <section className="section-subtle py-24 lg:py-32">
+      <section className="section-subtle py-12 lg:py-16">
         <Container>
           <AnimatedSection className="mb-14">
             <SectionLabel>Background</SectionLabel>
