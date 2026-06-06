@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ExternalLink, Github, Search, X, ChevronRight,
-  Clock, Zap, Plus, Upload,
+  Clock, Zap, Plus, PenLine,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -48,26 +48,41 @@ const StatusBadge = ({ status }: { status: string }) =>
     </span>
   )
 
-// ─── Add Project Modal ─────────────────────────────────────────────────────────
-function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+// ─── Add / Edit Project Modal ──────────────────────────────────────────────────
+function ProjectFormModal({
+  onClose,
+  onSuccess,
+  project,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  project?: Project  // present → edit mode
+}) {
+  const isEdit = !!project?.docId
 
-  const [title, setTitle]               = useState('')
-  const [description, setDescription]   = useState('')
-  const [longDescription, setLongDescription] = useState('')
-  const [year, setYear]                 = useState(new Date().getFullYear().toString())
-  const [status, setStatus]             = useState<'live' | 'wip'>('wip')
-  const [github, setGithub]             = useState('')
-  const [demo, setDemo]                 = useState('')
-  const [color, setColor]               = useState(GRADIENT_PRESETS[0])
-  const [imageFile, setImageFile]       = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [inspiration, setInspiration]   = useState('')
-  const [problem, setProblem]           = useState('')
-  const [tags, setTags]                 = useState<string[]>([])
+  const [title, setTitle]               = useState(project?.title ?? '')
+  const [description, setDescription]   = useState(project?.description ?? '')
+  const [longDescription, setLongDescription] = useState(project?.longDescription ?? '')
+  const [year, setYear]                 = useState(project?.year ?? new Date().getFullYear().toString())
+  const [status, setStatus]             = useState<'live' | 'wip'>(project?.status ?? 'wip')
+  const [github, setGithub]             = useState(project?.github ?? '')
+  const [demo, setDemo]                 = useState(project?.demo ?? '')
+  const [color, setColor]               = useState(project?.color ?? GRADIENT_PRESETS[0])
+  const [imageUrl, setImageUrl]         = useState(project?.imageUrl ?? '')
+  const [imgError, setImgError]         = useState(false)
+  const [inspiration, setInspiration]   = useState(project?.inspiration ?? '')
+  const [problem, setProblem]           = useState(project?.problem ?? '')
+  const [tags, setTags]                 = useState<string[]>(project?.tags ?? [])
   const [tagInput, setTagInput]         = useState('')
-  const [challenges, setChallenges]     = useState<string[]>([''])
-  const [lessons, setLessons]           = useState<string[]>([''])
+  const [challenges, setChallenges]     = useState<string[]>(
+    project?.challenges?.length ? project.challenges : ['']
+  )
+  const [lessons, setLessons]           = useState<string[]>(
+    project?.lessons?.length ? project.lessons : ['']
+  )
+  const [otherLinks, setOtherLinks]     = useState<{ title: string; url: string }[]>(
+    project?.otherLinks?.length ? project.otherLinks : []
+  )
   const [submitting, setSubmitting]     = useState(false)
   const [error, setError]               = useState<string | null>(null)
 
@@ -77,46 +92,59 @@ function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSucces
     setTagInput('')
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isEdit && !project?.docId) {
+      setError('This is a static placeholder project and cannot be edited. Add it to Firestore first via "Add Project".')
+      return
+    }
     if (!title.trim())       { setError('Title is required'); return }
     if (!description.trim()) { setError('Short description is required'); return }
 
     setSubmitting(true)
     setError(null)
 
+    const payload: Omit<Project, 'id' | 'docId'> = {
+      title: title.trim(),
+      description: description.trim(),
+      longDescription: longDescription.trim(),
+      tags,
+      color,
+      github: github.trim() || null,
+      demo: demo.trim() || null,
+      status,
+      year,
+      inspiration: inspiration.trim(),
+      problem: problem.trim(),
+      challenges: challenges.filter(Boolean),
+      lessons: lessons.filter(Boolean),
+      imageUrl: imageUrl.trim() || null,
+      otherLinks: otherLinks.filter((l) => l.title.trim() && l.url.trim()),
+    }
+
     try {
-      const { addProjectToFirestore } = await import('@/lib/projects-firestore')
-      await addProjectToFirestore(
-        {
-          title: title.trim(),
-          description: description.trim(),
-          longDescription: longDescription.trim(),
-          tags,
-          color,
-          github: github.trim() || null,
-          demo: demo.trim() || null,
-          status,
-          year,
-          inspiration: inspiration.trim(),
-          problem: problem.trim(),
-          challenges: challenges.filter(Boolean),
-          lessons: lessons.filter(Boolean),
-          imageUrl: null,
-        },
-        imageFile ?? undefined,
-      )
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) {
+        setError('You are not signed in. Please sign in as admin and try again.')
+        return
+      }
+
+      if (isEdit && project?.docId) {
+        const { updateProjectInFirestore } = await import('@/lib/projects-firestore')
+        await updateProjectInFirestore(project.docId, payload)
+      } else {
+        const { addProjectToFirestore } = await import('@/lib/projects-firestore')
+        await addProjectToFirestore(payload)
+      }
       onSuccess()
-    } catch (err) {
-      console.error(err)
-      setError('Failed to save. Please try again.')
+    } catch (err: any) {
+      console.error('[ProjectForm]', err)
+      const msg = err?.message || String(err)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — check your Firestore security rules.')
+      } else {
+        setError(msg || 'Failed to save. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -149,7 +177,9 @@ function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSucces
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6
                         border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add Project</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {isEdit ? 'Edit Project' : 'Add Project'}
+          </h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
@@ -162,27 +192,35 @@ function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
 
-          {/* Cover image */}
+          {/* Cover image URL */}
           <div>
-            <label className={label}>Cover Image</label>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="relative w-full h-44 rounded-2xl border-2 border-dashed
-                         border-gray-200 dark:border-gray-700 cursor-pointer overflow-hidden
-                         hover:border-[#671372]/40 transition-colors"
-            >
-              {imagePreview ? (
-                <Image src={imagePreview} alt="preview" fill className="object-cover" />
+            <label className={label}>Cover Image URL</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImgError(false) }}
+              placeholder="https://i.imgur.com/... or any public image link"
+              className={input}
+            />
+            {/* Live preview */}
+            <div className="relative mt-2.5 w-full h-40 rounded-2xl overflow-hidden">
+              {imageUrl.trim() && !imgError ? (
+                // Plain <img> so any public URL works without Next.js optimization constraints
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl.trim()}
+                  alt="preview"
+                  onError={() => setImgError(true)}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className={`w-full h-full bg-gradient-to-br ${color}
-                                 flex flex-col items-center justify-center gap-2`}>
-                  <Upload size={20} className="text-white/60" />
-                  <span className="text-xs text-white/60">Click to upload</span>
+                                 flex items-center justify-center`}>
+                  <span className="text-xs text-white/50">
+                    {imgError ? 'Could not load image — check the URL' : 'Preview (paste a URL above)'}
+                  </span>
                 </div>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*"
-                   onChange={handleImageChange} className="hidden" />
           </div>
 
           {/* Gradient preset */}
@@ -373,6 +411,53 @@ function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSucces
             </div>
           </div>
 
+          {/* Other Links */}
+          <div>
+            <label className={label}>Other Links <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+            <div className="space-y-2">
+              {otherLinks.map((link, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    value={link.title}
+                    onChange={(e) => {
+                      const next = [...otherLinks]
+                      next[i] = { ...next[i], title: e.target.value }
+                      setOtherLinks(next)
+                    }}
+                    placeholder="Label (e.g. Demo Video)"
+                    className={`${input} w-36 shrink-0`}
+                  />
+                  <input
+                    value={link.url}
+                    onChange={(e) => {
+                      const next = [...otherLinks]
+                      next[i] = { ...next[i], url: e.target.value }
+                      setOtherLinks(next)
+                    }}
+                    placeholder="https://..."
+                    className={`${input} flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOtherLinks((prev) => prev.filter((_, j) => j !== i))}
+                    className="px-3 rounded-xl bg-gray-100 dark:bg-gray-800
+                               text-gray-400 hover:bg-red-50 hover:text-red-500
+                               dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setOtherLinks((prev) => [...prev, { title: '', url: '' }])}
+                className="text-xs text-[#671372] dark:text-[#c44cf0] hover:underline"
+              >
+                + Add link
+              </button>
+            </div>
+          </div>
+
           {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
 
           {/* Actions */}
@@ -390,7 +475,7 @@ function AddProjectModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                          disabled:opacity-50 disabled:cursor-not-allowed
                          transition-all shadow-purple-lg"
             >
-              {submitting ? 'Saving…' : 'Add Project'}
+              {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Project'}
             </button>
           </div>
         </form>
@@ -408,6 +493,14 @@ export default function ProjectsClient({ projects }: Props) {
   const [search, setSearch]       = useState('')
   const [selected, setSelected]   = useState<Project | null>(null)
   const [showForm, setShowForm]   = useState(false)
+  const [editing, setEditing]     = useState<Project | null>(null)
+
+  // Log to diagnose docId presence when a project is selected
+  React.useEffect(() => {
+    if (selected && isAdmin) {
+      console.log('[ProjectsClient] selected project:', { id: selected.id, docId: selected.docId, title: selected.title })
+    }
+  }, [selected, isAdmin])
 
   const derivedTags = ['All', ...Array.from(new Set(projects.flatMap((p) => p.tags))).sort()]
 
@@ -616,6 +709,20 @@ export default function ProjectsClient({ projects }: Props) {
                               Details <ChevronRight size={12} />
                             </button>
                           )}
+
+                          {/* Admin edit button — always on the card so it's reachable even when demo link hides Details */}
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditing(project) }}
+                              className="ml-auto w-7 h-7 rounded-full flex items-center justify-center
+                                         text-gray-400 dark:text-gray-500
+                                         hover:bg-[#671372]/10 hover:text-[#671372] dark:hover:text-[#c44cf0]
+                                         transition-all duration-200"
+                              title="Edit project"
+                            >
+                              <PenLine size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -647,24 +754,21 @@ export default function ProjectsClient({ projects }: Props) {
               className="modal-card"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header band */}
-              <div className={`relative w-full h-36 rounded-t-[2rem] flex items-end p-7 overflow-hidden ${
+              {/* Header image band — no title on top */}
+              <div className={`relative w-full h-36 rounded-t-[2rem] overflow-hidden ${
                 selected.imageUrl ? '' : `bg-gradient-to-br ${selected.color}`
               }`}>
                 {selected.imageUrl ? (
                   <Image src={selected.imageUrl} alt={selected.title} fill className="object-cover" />
                 ) : (
                   <div
-                    className="absolute inset-0 opacity-[0.2] rounded-t-[2rem]"
+                    className="absolute inset-0 opacity-[0.2]"
                     style={{
                       backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
                       backgroundSize: '18px 18px',
                     }}
                   />
                 )}
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white relative z-10">
-                  {selected.title}
-                </h2>
               </div>
 
               {/* Close */}
@@ -681,7 +785,29 @@ export default function ProjectsClient({ projects }: Props) {
                 <X size={15} className="text-gray-600 dark:text-gray-300" />
               </button>
 
+              {/* Edit button — visible to admin for all projects */}
+              {isAdmin && (
+                <button
+                  onClick={() => { setEditing(selected); setSelected(null) }}
+                  className="absolute top-4 right-[3.25rem]
+                             w-9 h-9 rounded-full
+                             bg-white/80 dark:bg-gray-700
+                             border border-gray-200 dark:border-gray-600
+                             text-gray-600 dark:text-gray-300
+                             flex items-center justify-center
+                             hover:bg-[#671372] hover:border-[#671372] hover:text-white
+                             transition-colors shadow-soft"
+                >
+                  <PenLine size={15} />
+                </button>
+              )}
+
               <div style={{ padding: '1.75rem' }} className="space-y-6">
+                {/* Title lives here now, below the image */}
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {selected.title}
+                </h2>
+
                 {[
                   { label: '💡 Inspiration',   text: selected.inspiration     },
                   { label: '🔧 Problem Solved', text: selected.problem         },
@@ -747,16 +873,36 @@ export default function ProjectsClient({ projects }: Props) {
                   </div>
                 </div>
 
-                {selected.github && (
-                  <a href={selected.github} target="_blank" rel="noopener noreferrer"
-                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
-                                bg-gray-100 dark:bg-gray-800
-                                text-gray-800 dark:text-gray-200
-                                text-sm font-medium
-                                hover:bg-[#671372] hover:text-white
-                                transition-all duration-200">
-                    <Github size={14} /> View Code
-                  </a>
+                {(selected.github || (selected.otherLinks && selected.otherLinks.length > 0)) && (
+                  <div className="flex flex-wrap gap-2">
+                    {selected.github && (
+                      <a href={selected.github} target="_blank" rel="noopener noreferrer"
+                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                                    bg-gray-100 dark:bg-gray-800
+                                    text-gray-800 dark:text-gray-200
+                                    text-sm font-medium
+                                    hover:bg-[#671372] hover:text-white
+                                    transition-all duration-200">
+                        <Github size={14} /> View Code
+                      </a>
+                    )}
+                    {selected.otherLinks?.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                                   bg-gray-100 dark:bg-gray-800
+                                   text-gray-800 dark:text-gray-200
+                                   text-sm font-medium
+                                   hover:bg-[#671372] hover:text-white
+                                   transition-all duration-200"
+                      >
+                        <ExternalLink size={14} /> {link.title}
+                      </a>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -767,9 +913,20 @@ export default function ProjectsClient({ projects }: Props) {
       {/* ══ Add Project Form ══════════════════════════════ */}
       <AnimatePresence>
         {showForm && (
-          <AddProjectModal
+          <ProjectFormModal
             onClose={() => setShowForm(false)}
             onSuccess={() => { setShowForm(false); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Project Form ═════════════════════════════ */}
+      <AnimatePresence>
+        {editing && (
+          <ProjectFormModal
+            project={editing}
+            onClose={() => setEditing(null)}
+            onSuccess={() => { setEditing(null); router.refresh() }}
           />
         )}
       </AnimatePresence>

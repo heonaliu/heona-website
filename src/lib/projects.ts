@@ -14,6 +14,7 @@ export interface Project {
   challenges: string[]
   lessons: string[]
   imageUrl?: string | null
+  otherLinks?: { title: string; url: string }[]
   docId?: string
 }
 

@@ -10,12 +10,10 @@ export async function getProjectsFromFirestore(): Promise<Project[]> {
     const db = await getDb()
     if (!db) return []
 
-    const { collection, getDocs, query, orderBy } = await import('firebase/firestore')
-    const ref = collection(db, 'projects')
-    const q = query(ref, orderBy('createdAt', 'desc'))
-    const snapshot = await getDocs(q)
+    const { collection, getDocs } = await import('firebase/firestore')
+    const snapshot = await getDocs(collection(db, 'projects'))
 
-    return snapshot.docs.map((doc) => {
+    const projects = snapshot.docs.map((doc) => {
       const d = doc.data()
       return {
         id: doc.id,
@@ -34,7 +32,15 @@ export async function getProjectsFromFirestore(): Promise<Project[]> {
         challenges: d.challenges || [],
         lessons: d.lessons || [],
         imageUrl: d.imageUrl || null,
+        otherLinks: d.otherLinks || [],
       } satisfies Project
+    })
+
+    // Sort newest-first in JS — avoids requiring a Firestore composite index
+    return projects.sort((a, b) => {
+      const aMs = snapshot.docs.find((d) => d.id === a.id)?.data().createdAt?.toMillis?.() ?? 0
+      const bMs = snapshot.docs.find((d) => d.id === b.id)?.data().createdAt?.toMillis?.() ?? 0
+      return bMs - aMs
     })
   } catch (e) {
     console.error('[projects-firestore] getProjectsFromFirestore:', e)
@@ -52,23 +58,27 @@ export async function uploadProjectImage(file: File): Promise<string> {
   return getDownloadURL(storageRef)
 }
 
+export async function updateProjectInFirestore(
+  docId: string,
+  data: Omit<Project, 'id' | 'docId'>,
+): Promise<void> {
+  const db = await getDb()
+  if (!db) throw new Error('Firestore not initialized')
+
+  const { doc, updateDoc } = await import('firebase/firestore')
+  await updateDoc(doc(db, 'projects', docId), { ...data })
+}
+
 export async function addProjectToFirestore(
   data: Omit<Project, 'id' | 'docId'>,
-  imageFile?: File,
 ): Promise<string> {
   const db = await getDb()
   if (!db) throw new Error('Firestore not initialized')
 
   const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
 
-  let imageUrl: string | null = null
-  if (imageFile) {
-    imageUrl = await uploadProjectImage(imageFile)
-  }
-
   const docRef = await addDoc(collection(db, 'projects'), {
     ...data,
-    imageUrl,
     createdAt: serverTimestamp(),
   })
 
