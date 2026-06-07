@@ -107,10 +107,6 @@ function ProjectFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isEdit && !project?.docId) {
-      setError('This is a static placeholder project and cannot be edited. Add it to Firestore first via "Add Project".')
-      return
-    }
     if (!title.trim())       { setError('Title is required'); return }
     if (!description.trim()) { setError('Short description is required'); return }
 
@@ -514,10 +510,7 @@ export default function ProjectsClient({ projects }: Props) {
   const [deleting, setDeleting]   = useState<string | null>(null)
 
   const handleDelete = async (project: Project) => {
-    if (!project.docId) {
-      window.alert('This is a static placeholder project and cannot be deleted from here.')
-      return
-    }
+    if (!project.docId) return
     if (!window.confirm(`Permanently delete "${project.title}"? This cannot be undone.`)) return
     setDeleting(project.docId)
     try {
