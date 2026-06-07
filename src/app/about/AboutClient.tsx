@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import Image from 'next/image'
 import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import {
   Download, Code2, Palette, Music, Activity, Zap, Star, Coffee, BookOpen,
@@ -1091,20 +1092,17 @@ export default function AboutClient({
             {/* Visual card */}
             <AnimatedSection direction="left">
               <div className="relative mx-auto max-w-sm lg:ml-auto lg:mr-0">
-                <div className="aspect-square rounded-[2rem]
-                                bg-gradient-to-br
-                                from-[#671372]/14 via-[#8B1D9F]/08 to-[#c44cf0]/06
-                                dark:from-[#671372]/22 dark:via-[#8B1D9F]/14 dark:to-[#c44cf0]/10
+                <div className="relative aspect-square rounded-[2rem] overflow-hidden
                                 border border-[#671372]/10 dark:border-[#671372]/20
-                                shadow-large
-                                flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-24 h-24 mx-auto rounded-full bg-[#671372]
-                                    flex items-center justify-center shadow-purple-lg mb-5">
-                      <span className="text-white font-bold text-3xl">HL</span>
-                    </div>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Photo coming soon</p>
-                  </div>
+                                shadow-large">
+                  <Image
+                    src="/images/heona1.jpg"
+                    alt="Heona Liu"
+                    fill
+                    sizes="(min-width: 1024px) 384px, 90vw"
+                    className="object-cover"
+                    priority
+                  />
                 </div>
 
                 {/* Floating chips — intentionally offset but contained */}
