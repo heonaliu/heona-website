@@ -63,7 +63,7 @@ export async function deletePostFromFirestore(docId: string): Promise<void> {
 }
 
 /** Returns the post plus its Firestore document ID — used by the edit page. */
-export async function getPostForEditing(slug: string): Promise<{ post: BlogPost; docId: string } | null> {
+export async function getPostForEditing(slug: string): Promise<{ post: BlogPost; docId: string; dateISO: string } | null> {
   try {
     const db = await getDb()
     if (!db) return null
@@ -80,12 +80,17 @@ export async function getPostForEditing(slug: string): Promise<{ post: BlogPost;
     const { default: readingTime } = await import('reading-time')
     const stats = readingTime(d.content || '')
     const ts = d.publishedAt ?? d.createdAt
-    const date = ts?.toDate
-      ? ts.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    const tsDate: Date | null = ts?.toDate ? ts.toDate() : null
+    const date = tsDate
+      ? tsDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       : ''
+    const dateISO = tsDate
+      ? `${tsDate.getFullYear()}-${String(tsDate.getMonth() + 1).padStart(2, '0')}-${String(tsDate.getDate()).padStart(2, '0')}`
+      : new Date().toISOString().slice(0, 10)
 
     return {
       docId: doc.id,
+      dateISO,
       post: {
         slug: d.slug || doc.id,
         title: d.title || '',

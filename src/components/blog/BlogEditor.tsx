@@ -18,6 +18,8 @@ interface Props {
   initialExcerpt?: string
   initialTags?: string[]
   initialSlug?: string
+  /** Publish date in YYYY-MM-DD form — defaults to today for new posts */
+  initialDate?: string
 }
 
 export default function BlogEditor({
@@ -27,6 +29,7 @@ export default function BlogEditor({
   initialExcerpt = '',
   initialTags = [],
   initialSlug,
+  initialDate,
 }: Props) {
   const { isAdmin, user } = useAuth()
   const router = useRouter()
@@ -35,6 +38,7 @@ export default function BlogEditor({
   const [title, setTitle]     = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
   const [excerpt, setExcerpt] = useState(initialExcerpt)
+  const [date, setDate]       = useState(initialDate || new Date().toISOString().slice(0, 10))
   const [tags, setTags]       = useState<string[]>(initialTags)
   const [tagInput, setTagInput] = useState('')
   const [isDraft, setIsDraft] = useState(!isEditMode)
@@ -87,12 +91,14 @@ export default function BlogEditor({
     try {
       const { db } = await import('@/lib/firebase')
       if (!db) throw new Error('Firestore not initialized')
-      const { serverTimestamp } = await import('firebase/firestore')
+      const { serverTimestamp, Timestamp } = await import('firebase/firestore')
+      const publishedAt = Timestamp.fromDate(new Date(`${date}T12:00:00`))
 
       if (isEditMode && postId) {
         const { doc, updateDoc } = await import('firebase/firestore')
         await updateDoc(doc(db, 'posts', postId), {
           title, content, excerpt, tags,
+          publishedAt,
           updatedAt: serverTimestamp(),
         })
       } else {
@@ -100,6 +106,7 @@ export default function BlogEditor({
         await addDoc(collection(db, 'posts'), {
           title, content, excerpt, tags,
           draft: true, published: false,
+          publishedAt,
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
           authorEmail: user?.email,
         })
@@ -113,7 +120,7 @@ export default function BlogEditor({
     } finally {
       setSaving(false)
     }
-  }, [isAdmin, title, content, excerpt, tags, user, isEditMode, postId])
+  }, [isAdmin, title, content, excerpt, date, tags, user, isEditMode, postId])
 
   // ─── Publish ──────────────────────────────────────────────
   const publish = async () => {
@@ -122,13 +129,15 @@ export default function BlogEditor({
     try {
       const { db } = await import('@/lib/firebase')
       if (!db) throw new Error('Firestore not initialized')
-      const { serverTimestamp } = await import('firebase/firestore')
+      const { serverTimestamp, Timestamp } = await import('firebase/firestore')
+      const publishedAt = Timestamp.fromDate(new Date(`${date}T12:00:00`))
 
       if (isEditMode && postId) {
         const { doc, updateDoc } = await import('firebase/firestore')
         await updateDoc(doc(db, 'posts', postId), {
           title, content, excerpt, tags,
           draft: false, published: true,
+          publishedAt,
           updatedAt: serverTimestamp(),
         })
         router.push(`/blog/${initialSlug}`)
@@ -144,7 +153,7 @@ export default function BlogEditor({
         await addDoc(collection(db, 'posts'), {
           slug, title, content, excerpt, tags,
           draft: false, published: true,
-          publishedAt: serverTimestamp(), createdAt: serverTimestamp(),
+          publishedAt, createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(), authorEmail: user?.email,
         })
         router.push(`/blog/${slug}`)
@@ -244,7 +253,7 @@ export default function BlogEditor({
         {/* Editor */}
         <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-4xl shadow-soft overflow-hidden">
           {/* Metadata bar */}
-          <div className="border-b border-gray-100 dark:border-gray-800 p-6 grid md:grid-cols-3 gap-4">
+          <div className="border-b border-gray-100 dark:border-gray-800 p-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <label className="text-xs text-gray-400 block mb-1">Excerpt</label>
@@ -253,6 +262,18 @@ export default function BlogEditor({
                   onChange={(e) => setExcerpt(e.target.value)}
                   placeholder="Brief description..."
                   className="w-full text-sm bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <label className="text-xs text-gray-400 block mb-1">Date</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full text-sm bg-transparent border-none outline-none text-gray-700 dark:text-gray-300"
                 />
               </div>
             </div>

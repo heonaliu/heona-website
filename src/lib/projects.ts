@@ -16,4 +16,5 @@ export interface Project {
   imageUrl?: string | null
   otherLinks?: { title: string; url: string }[]
   docId?: string
+  order?: number
 }

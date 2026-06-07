@@ -100,5 +100,9 @@ export function buildArtworkList(
     docId: c.id,
   }))
 
-  return [...overriddenStatic, ...customAsArtworks]
+  return [...overriddenStatic, ...customAsArtworks].sort((a, b) => {
+    const ay = parseInt(a.year, 10) || 0
+    const by = parseInt(b.year, 10) || 0
+    return by - ay
+  })
 }

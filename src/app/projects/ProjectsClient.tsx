@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ExternalLink, Github, Search, X, ChevronRight,
+  ExternalLink, Github, Search, X, ChevronRight, ChevronUp, ChevronDown,
   Clock, Zap, Plus, PenLine, Link2, Pause, CircleSlash, Trash2,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -508,6 +508,53 @@ export default function ProjectsClient({ projects }: Props) {
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Project | null>(null)
   const [deleting, setDeleting]   = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+
+  // One-time migration: assign sequential `order` values to existing projects
+  // that don't have one yet, so admin reordering has a starting point.
+  const migratedRef = useRef(false)
+  useEffect(() => {
+    if (!isAdmin || migratedRef.current) return
+    if (projects.length === 0 || projects.every((p) => typeof p.order === 'number')) return
+    migratedRef.current = true
+    ;(async () => {
+      try {
+        const { auth } = await import('@/lib/firebase')
+        if (!auth?.currentUser) return
+        const { reorderProjects } = await import('@/lib/projects-firestore')
+        const order = projects
+          .filter((p): p is Project & { docId: string } => !!p.docId)
+          .map((p, i) => ({ id: p.docId, order: i }))
+        await reorderProjects(order)
+        router.refresh()
+      } catch (e) {
+        console.error('[ProjectsClient] order migration failed:', e)
+      }
+    })()
+  }, [isAdmin, projects, router])
+
+  const moveProject = async (project: Project, direction: -1 | 1) => {
+    const idx = projects.findIndex((p) => p.id === project.id)
+    const swapIdx = idx + direction
+    if (idx === -1 || swapIdx < 0 || swapIdx >= projects.length) return
+    setReordering(true)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      const reordered = [...projects]
+      ;[reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]]
+      const { reorderProjects } = await import('@/lib/projects-firestore')
+      const order = reordered
+        .filter((p): p is Project & { docId: string } => !!p.docId)
+        .map((p, i) => ({ id: p.docId, order: i }))
+      await reorderProjects(order)
+      router.refresh()
+    } catch (e: any) {
+      window.alert(e?.message || 'Failed to reorder.')
+    } finally {
+      setReordering(false)
+    }
+  }
 
   const handleDelete = async (project: Project) => {
     if (!project.docId) return
@@ -738,6 +785,32 @@ export default function ProjectsClient({ projects }: Props) {
                           {/* Admin edit / delete buttons — always on the card so reachable even when demo link hides Details */}
                           {isAdmin && (
                             <div className="ml-auto flex items-center gap-1">
+                              {activeTag === 'All' && !search && (
+                                <>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); moveProject(project, -1) }}
+                                    disabled={reordering || projects.findIndex((p) => p.id === project.id) === 0}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center
+                                               text-gray-400 dark:text-gray-500
+                                               hover:bg-[#671372]/10 hover:text-[#671372] dark:hover:text-[#c44cf0]
+                                               transition-all duration-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                                    title="Move up"
+                                  >
+                                    <ChevronUp size={13} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); moveProject(project, 1) }}
+                                    disabled={reordering || projects.findIndex((p) => p.id === project.id) === projects.length - 1}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center
+                                               text-gray-400 dark:text-gray-500
+                                               hover:bg-[#671372]/10 hover:text-[#671372] dark:hover:text-[#c44cf0]
+                                               transition-all duration-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                                    title="Move down"
+                                  >
+                                    <ChevronDown size={13} />
+                                  </button>
+                                </>
+                              )}
                               <button
                                 onClick={(e) => { e.stopPropagation(); setEditing(project) }}
                                 className="w-7 h-7 rounded-full flex items-center justify-center

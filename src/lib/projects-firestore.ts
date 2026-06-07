@@ -33,10 +33,15 @@ export async function getProjectsFromFirestore(): Promise<Project[]> {
         lessons: d.lessons || [],
         imageUrl: d.imageUrl || null,
         otherLinks: d.otherLinks || [],
+        order: typeof d.order === 'number' ? d.order : undefined,
       } satisfies Project
     })
 
-    // Sort newest-first in JS — avoids requiring a Firestore composite index
+    // Once every project has a custom order (admin has reordered), sort by it.
+    // Otherwise fall back to newest-first — avoids requiring a Firestore composite index.
+    if (projects.length > 0 && projects.every((p) => typeof p.order === 'number')) {
+      return projects.sort((a, b) => (a.order as number) - (b.order as number))
+    }
     return projects.sort((a, b) => {
       const aMs = snapshot.docs.find((d) => d.id === a.id)?.data().createdAt?.toMillis?.() ?? 0
       const bMs = snapshot.docs.find((d) => d.id === b.id)?.data().createdAt?.toMillis?.() ?? 0
@@ -75,6 +80,18 @@ export async function deleteProjectFromFirestore(docId: string): Promise<void> {
 
   const { doc, deleteDoc } = await import('firebase/firestore')
   await deleteDoc(doc(db, 'projects', docId))
+}
+
+export async function reorderProjects(order: { id: string; order: number }[]): Promise<void> {
+  const db = await getDb()
+  if (!db) throw new Error('Firestore not initialized')
+
+  const { doc, writeBatch } = await import('firebase/firestore')
+  const batch = writeBatch(db)
+  order.forEach(({ id, order: pos }) => {
+    batch.update(doc(db, 'projects', id), { order: pos })
+  })
+  await batch.commit()
 }
 
 export async function addProjectToFirestore(

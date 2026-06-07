@@ -14,7 +14,7 @@ export default async function EditBlogPostPage({ params }: Props) {
 
   if (!result) notFound()
 
-  const { post, docId } = result
+  const { post, docId, dateISO } = result
 
   return (
     <BlogEditor
@@ -24,6 +24,7 @@ export default async function EditBlogPostPage({ params }: Props) {
       initialExcerpt={post.excerpt}
       initialTags={post.tags}
       initialSlug={post.slug}
+      initialDate={dateISO}
     />
   )
 }
