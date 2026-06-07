@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { getTimelineNodes } from '@/lib/timeline-firestore'
+import { getSkillSections } from '@/lib/skills-firestore'
+import { getInterests } from '@/lib/interests-firestore'
 import AboutClient from './AboutClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +12,16 @@ export const metadata: Metadata = {
 }
 
 export default async function AboutPage() {
-  const timelineNodes = await getTimelineNodes()
-  return <AboutClient timelineNodes={timelineNodes} />
+  const [timelineNodes, skillSections, interests] = await Promise.all([
+    getTimelineNodes(),
+    getSkillSections(),
+    getInterests(),
+  ])
+  return (
+    <AboutClient
+      timelineNodes={timelineNodes}
+      skillSections={skillSections}
+      interests={interests}
+    />
+  )
 }

@@ -13,6 +13,8 @@ import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
 import { useAuth } from '@/context/AuthContext'
 import type { TimelineNode } from '@/lib/timeline-firestore'
+import type { SkillSection } from '@/lib/skills-firestore'
+import type { InterestNode } from '@/lib/interests-firestore'
 
 const ICON_OPTIONS = [
   { key: 'Code2', Icon: Code2 },
@@ -38,7 +40,7 @@ const ICON_MAP: Record<string, typeof Star> = Object.fromEntries(
 )
 
 /* ─── Data ─────────────────────────────────────────── */
-const skills = [
+const staticSkills = [
   {
     category: 'Languages',
     items: ['TypeScript', 'Python', 'JavaScript', 'Java', 'SQL', 'HTML / CSS'],
@@ -70,11 +72,11 @@ const staticTimeline = [
   { year: '2025', title: 'Now',                     desc: 'CS student, part-time creator, full-time curious human.',                   icon: 'BookOpen' },
 ]
 
-const interests = [
-  { Icon: Code2,    label: 'Programming',  desc: 'Building tools that solve real problems — and creative experiments that don\'t.' },
-  { Icon: Palette,  label: 'Digital Art',  desc: 'Illustration, character design, and generative visual experiments.' },
-  { Icon: Activity, label: 'Badminton',    desc: 'On the court whenever possible — the best way to clear the mind.' },
-  { Icon: Music,    label: 'Piano',        desc: 'Classical pieces, movie soundtracks, and occasional improvisation.' },
+const staticInterests = [
+  { icon: 'Code2',    label: 'Programming',  desc: 'Building tools that solve real problems — and creative experiments that don\'t.' },
+  { icon: 'Palette',  label: 'Digital Art',  desc: 'Illustration, character design, and generative visual experiments.' },
+  { icon: 'Activity', label: 'Badminton',    desc: 'On the court whenever possible — the best way to clear the mind.' },
+  { icon: 'Music',    label: 'Piano',        desc: 'Classical pieces, movie soundtracks, and occasional improvisation.' },
 ]
 
 /* ─── Components ─────────────────────────────────────── */
@@ -265,7 +267,386 @@ function TimelineFormModal({
   )
 }
 
-export default function AboutClient({ timelineNodes }: { timelineNodes: TimelineNode[] }) {
+// ─── Add / Edit Skill Section Modal ────────────────────────────────────────────
+function SkillSectionFormModal({
+  onClose,
+  onSuccess,
+  section,
+  nextOrder,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  section?: SkillSection  // present → edit mode
+  nextOrder: number
+}) {
+  const isEdit = !!section
+
+  const [category, setCategory] = useState(section?.category ?? '')
+  const [items, setItems]       = useState<string[]>(section?.items ?? [])
+  const [itemInput, setItemInput] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  const addItem = () => {
+    const t = itemInput.trim()
+    if (t && !items.includes(t)) setItems((prev) => [...prev, t])
+    setItemInput('')
+  }
+  const removeItem = (t: string) => setItems((prev) => prev.filter((x) => x !== t))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!category.trim()) { setError('Section name is required'); return }
+    if (items.length === 0) { setError('Add at least one tag'); return }
+
+    setSubmitting(true)
+    setError(null)
+
+    const payload = {
+      category: category.trim(),
+      items,
+      order: section?.order ?? nextOrder,
+    }
+
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) {
+        setError('You are not signed in. Please sign in as admin and try again.')
+        return
+      }
+
+      if (isEdit && section) {
+        const { updateSkillSection } = await import('@/lib/skills-firestore')
+        await updateSkillSection(section.id, payload)
+      } else {
+        const { addSkillSection } = await import('@/lib/skills-firestore')
+        await addSkillSection(payload)
+      }
+      onSuccess()
+    } catch (err: any) {
+      console.error('[SkillSectionForm]', err)
+      const msg = err?.message || String(err)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — check your Firestore security rules.')
+      } else {
+        setError(msg || 'Failed to save. Please try again.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const input = `w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700
+                 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white
+                 placeholder-gray-400 focus:outline-none focus:ring-2
+                 focus:ring-[#671372]/25 focus:border-[#671372]/40 transition-all`
+  const label = `block text-xs font-semibold uppercase tracking-wider
+                 text-gray-500 dark:text-gray-400 mb-1.5`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                 flex items-start justify-center overflow-y-auto py-8 px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-6
+                        border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {isEdit ? 'Edit Section' : 'Add Skill Section'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
+                       flex items-center justify-center
+                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={14} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+
+          {/* Category name */}
+          <div>
+            <label className={label}>Section Name *</label>
+            <input value={category} onChange={(e) => setCategory(e.target.value)}
+                   placeholder="e.g. Languages, Frontend…" className={input} />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className={label}>Tags *</label>
+            <div className="flex gap-2">
+              <input
+                value={itemInput}
+                onChange={(e) => setItemInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
+                placeholder="e.g. TypeScript, React…"
+                className={`${input} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={addItem}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold
+                           bg-[#671372]/10 dark:bg-[#671372]/25
+                           text-[#671372] dark:text-[#c44cf0]
+                           hover:bg-[#671372]/20 dark:hover:bg-[#671372]/35
+                           transition-colors flex-shrink-0"
+              >
+                Add
+              </button>
+            </div>
+            {items.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {items.map((t) => (
+                  <span
+                    key={t}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+                               bg-[#671372]/10 dark:bg-[#671372]/25
+                               text-[#671372] dark:text-[#c44cf0]"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(t)}
+                      className="hover:text-red-500 transition-colors ml-0.5"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold
+                         text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <motion.button
+              type="submit"
+              disabled={submitting}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-6 py-2.5 rounded-full bg-[#671372] text-white text-sm font-semibold
+                         shadow-purple-lg hover:bg-[#8B1D9F] transition-all disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Section'}
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ─── Add / Edit Interest Modal ─────────────────────────────────────────────────
+function InterestFormModal({
+  onClose,
+  onSuccess,
+  interest,
+  nextOrder,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  interest?: InterestNode  // present → edit mode
+  nextOrder: number
+}) {
+  const isEdit = !!interest
+
+  const [icon, setIcon]   = useState(interest?.icon ?? ICON_OPTIONS[0].key)
+  const [label, setLabelText] = useState(interest?.label ?? '')
+  const [desc, setDesc]   = useState(interest?.desc ?? '')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!label.trim()) { setError('Title is required'); return }
+
+    setSubmitting(true)
+    setError(null)
+
+    const payload = {
+      icon,
+      label: label.trim(),
+      desc: desc.trim(),
+      order: interest?.order ?? nextOrder,
+    }
+
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) {
+        setError('You are not signed in. Please sign in as admin and try again.')
+        return
+      }
+
+      if (isEdit && interest) {
+        const { updateInterest } = await import('@/lib/interests-firestore')
+        await updateInterest(interest.id, payload)
+      } else {
+        const { addInterest } = await import('@/lib/interests-firestore')
+        await addInterest(payload)
+      }
+      onSuccess()
+    } catch (err: any) {
+      console.error('[InterestForm]', err)
+      const msg = err?.message || String(err)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — check your Firestore security rules.')
+      } else {
+        setError(msg || 'Failed to save. Please try again.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const inputCls = `w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700
+                    bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white
+                    placeholder-gray-400 focus:outline-none focus:ring-2
+                    focus:ring-[#671372]/25 focus:border-[#671372]/40 transition-all`
+  const labelCls = `block text-xs font-semibold uppercase tracking-wider
+                    text-gray-500 dark:text-gray-400 mb-1.5`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                 flex items-start justify-center overflow-y-auto py-8 px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-6
+                        border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {isEdit ? 'Edit Interest' : 'Add Interest'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
+                       flex items-center justify-center
+                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={14} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+
+          {/* Icon picker */}
+          <div>
+            <label className={labelCls}>Icon</label>
+            <div className="grid grid-cols-8 gap-2">
+              {ICON_OPTIONS.map(({ key, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={key}
+                  onClick={() => setIcon(key)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${
+                    icon === key
+                      ? 'border-[#671372] bg-[#671372]/10 text-[#671372] dark:text-[#c44cf0] ring-2 ring-[#671372]/30'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-[#671372]/30'
+                  }`}
+                >
+                  <Icon size={17} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className={labelCls}>Title *</label>
+            <input value={label} onChange={(e) => setLabelText(e.target.value)}
+                   placeholder="e.g. Programming" className={inputCls} />
+          </div>
+
+          {/* Subtext */}
+          <div>
+            <label className={labelCls}>Subtext</label>
+            <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
+                      rows={3} placeholder="A short description of this interest..."
+                      className={`${inputCls} resize-none`} />
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold
+                         text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <motion.button
+              type="submit"
+              disabled={submitting}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-6 py-2.5 rounded-full bg-[#671372] text-white text-sm font-semibold
+                         shadow-purple-lg hover:bg-[#8B1D9F] transition-all disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Interest'}
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+export default function AboutClient({
+  timelineNodes,
+  skillSections,
+  interests,
+}: {
+  timelineNodes: TimelineNode[]
+  skillSections: SkillSection[]
+  interests: InterestNode[]
+}) {
   const { isAdmin } = useAuth()
   const router = useRouter()
 
@@ -352,6 +733,130 @@ export default function AboutClient({ timelineNodes }: { timelineNodes: Timeline
 
   // New nodes are placed at the top of the timeline (most recent first)
   const nextOrder = localNodes.length ? Math.min(...localNodes.map((n) => n.order)) - 1 : 0
+
+  // ─── Skills & Tools (admin-editable) ─────────────────────────────────────────
+  const usingCustomSkills = skillSections.length > 0
+  const displaySkillSections: SkillSection[] = usingCustomSkills
+    ? skillSections
+    : staticSkills.map((s, i) => ({ id: `static-${i}`, order: i, ...s }))
+
+  const [showAddSkillSection, setShowAddSkillSection] = useState(false)
+  const [editingSkillSection, setEditingSkillSection] = useState<SkillSection | null>(null)
+  const [deletingSkillId, setDeletingSkillId]         = useState<string | null>(null)
+  const [migratingSkills, setMigratingSkills]         = useState(false)
+  const skillsMigratedRef = useRef(false)
+
+  React.useEffect(() => {
+    if (!isAdmin || skillSections.length > 0 || skillsMigratedRef.current) return
+    skillsMigratedRef.current = true
+    setMigratingSkills(true)
+    ;(async () => {
+      try {
+        const { auth } = await import('@/lib/firebase')
+        if (!auth?.currentUser) return
+        const { addSkillSection } = await import('@/lib/skills-firestore')
+        for (let i = 0; i < staticSkills.length; i++) {
+          const s = staticSkills[i]
+          await addSkillSection({ category: s.category, items: s.items, order: i })
+        }
+        router.refresh()
+      } catch (e) {
+        console.error('[AboutClient] failed to seed skill sections:', e)
+        skillsMigratedRef.current = false
+      } finally {
+        setMigratingSkills(false)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, skillSections.length])
+
+  const handleDeleteSkillSection = async (section: SkillSection) => {
+    if (!usingCustomSkills) {
+      window.alert(migratingSkills
+        ? 'Setting up your skills editor — please try again in a moment.'
+        : 'Could not find this section in the database yet. Please refresh the page and try again.')
+      return
+    }
+    if (!window.confirm(`Delete the "${section.category}" section? This cannot be undone.`)) return
+    setDeletingSkillId(section.id)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      const { deleteSkillSection } = await import('@/lib/skills-firestore')
+      await deleteSkillSection(section.id)
+      router.refresh()
+    } catch (e: any) {
+      window.alert(e?.message || 'Failed to delete.')
+    } finally {
+      setDeletingSkillId(null)
+    }
+  }
+
+  const nextSkillOrder = displaySkillSections.length
+    ? Math.max(...displaySkillSections.map((s) => s.order)) + 1
+    : 0
+
+  // ─── Interests (admin-editable) ──────────────────────────────────────────────
+  const usingCustomInterests = interests.length > 0
+  const displayInterests: InterestNode[] = usingCustomInterests
+    ? interests
+    : staticInterests.map((it, i) => ({ id: `static-${i}`, order: i, ...it }))
+
+  const [showAddInterest, setShowAddInterest] = useState(false)
+  const [editingInterest, setEditingInterest] = useState<InterestNode | null>(null)
+  const [deletingInterestId, setDeletingInterestId] = useState<string | null>(null)
+  const [migratingInterests, setMigratingInterests] = useState(false)
+  const interestsMigratedRef = useRef(false)
+
+  React.useEffect(() => {
+    if (!isAdmin || interests.length > 0 || interestsMigratedRef.current) return
+    interestsMigratedRef.current = true
+    setMigratingInterests(true)
+    ;(async () => {
+      try {
+        const { auth } = await import('@/lib/firebase')
+        if (!auth?.currentUser) return
+        const { addInterest } = await import('@/lib/interests-firestore')
+        for (let i = 0; i < staticInterests.length; i++) {
+          const it = staticInterests[i]
+          await addInterest({ icon: it.icon, label: it.label, desc: it.desc, order: i })
+        }
+        router.refresh()
+      } catch (e) {
+        console.error('[AboutClient] failed to seed interests:', e)
+        interestsMigratedRef.current = false
+      } finally {
+        setMigratingInterests(false)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, interests.length])
+
+  const handleDeleteInterest = async (interest: InterestNode) => {
+    if (!usingCustomInterests) {
+      window.alert(migratingInterests
+        ? 'Setting up your interests editor — please try again in a moment.'
+        : 'Could not find this interest in the database yet. Please refresh the page and try again.')
+      return
+    }
+    if (!window.confirm(`Delete "${interest.label}"? This cannot be undone.`)) return
+    setDeletingInterestId(interest.id)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      const { deleteInterest } = await import('@/lib/interests-firestore')
+      await deleteInterest(interest.id)
+      router.refresh()
+    } catch (e: any) {
+      window.alert(e?.message || 'Failed to delete.')
+    } finally {
+      setDeletingInterestId(null)
+    }
+  }
+
+  const nextInterestOrder = displayInterests.length
+    ? Math.max(...displayInterests.map((it) => it.order)) + 1
+    : 0
 
   return (
     <div className="min-h-screen layout-safe">
@@ -502,31 +1007,72 @@ export default function AboutClient({ timelineNodes }: { timelineNodes: Timeline
       {/* ══ Skills ════════════════════════════════════════ */}
       <section className="section-white py-24 lg:py-32">
         <Container>
-          <AnimatedSection className="mb-14">
-            <SectionLabel>Toolkit</SectionLabel>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
-              Skills &amp; Tools
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md leading-relaxed">
-              Technologies I reach for when building products, interfaces, and experiments.
-            </p>
-          </AnimatedSection>
+          <div className="flex items-end justify-between gap-6 mb-14">
+            <AnimatedSection>
+              <SectionLabel>Toolkit</SectionLabel>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
+                Skills &amp; Tools
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md leading-relaxed">
+                Technologies I reach for when building products, interfaces, and experiments.
+              </p>
+            </AnimatedSection>
+
+            {isAdmin && (
+              <AnimatedSection direction="left">
+                <div className="flex items-center gap-3">
+                  {migratingSkills && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Setting up editor…</span>
+                  )}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowAddSkillSection(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full
+                               bg-[#671372] text-white text-sm font-semibold
+                               shadow-purple-lg hover:bg-[#8B1D9F] transition-all"
+                  >
+                    <Plus size={15} /> Add Section
+                  </motion.button>
+                </div>
+              </AnimatedSection>
+            )}
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {skills.map((group, i) => (
-              <AnimatedSection key={group.category} delay={i * 0.07}>
+            {displaySkillSections.map((group, i) => (
+              <AnimatedSection key={group.id} delay={i * 0.07}>
                 <motion.div
                   whileHover={{ y: -3 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-white dark:bg-gray-900
+                  className="relative bg-white dark:bg-gray-900
                              border border-gray-100 dark:border-gray-800
                              rounded-3xl p-7 shadow-soft
                              hover:shadow-medium
                              hover:border-[#671372]/12 dark:hover:border-[#671372]/22
                              transition-all duration-300 h-full"
                 >
+                  {isAdmin && (
+                    <div className="absolute top-4 right-4 flex items-center gap-1">
+                      <button
+                        onClick={() => setEditingSkillSection(group)}
+                        title="Edit section"
+                        className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <PenLine size={13} className="text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSkillSection(group)}
+                        disabled={deletingSkillId === group.id}
+                        title="Delete section"
+                        className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 size={13} className="text-gray-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                  )}
                   <h3 className="text-[11px] font-bold uppercase tracking-[0.14em]
-                                 text-[#671372] dark:text-[#c44cf0] mb-5">
+                                 text-[#671372] dark:text-[#c44cf0] mb-5 pr-16">
                     {group.category}
                   </h3>
                   <div className="flex flex-wrap gap-2.5">
@@ -546,38 +1092,82 @@ export default function AboutClient({ timelineNodes }: { timelineNodes: Timeline
       {/* ══ Interests ════════════════════════════════════ */}
       <section className="section-subtle py-24 lg:py-32">
         <Container>
-          <AnimatedSection className="mb-14">
-            <SectionLabel>Beyond the Screen</SectionLabel>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-              Interests
-            </h2>
-          </AnimatedSection>
+          <div className="flex items-end justify-between gap-6 mb-14">
+            <AnimatedSection>
+              <SectionLabel>Beyond the Screen</SectionLabel>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
+                Interests
+              </h2>
+            </AnimatedSection>
+
+            {isAdmin && (
+              <AnimatedSection direction="left">
+                <div className="flex items-center gap-3">
+                  {migratingInterests && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">Setting up editor…</span>
+                  )}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowAddInterest(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full
+                               bg-[#671372] text-white text-sm font-semibold
+                               shadow-purple-lg hover:bg-[#8B1D9F] transition-all"
+                  >
+                    <Plus size={15} /> Add Interest
+                  </motion.button>
+                </div>
+              </AnimatedSection>
+            )}
+          </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {interests.map(({ Icon, label, desc }, i) => (
-              <AnimatedSection key={label} delay={i * 0.09}>
-                <motion.div
-                  whileHover={{ y: -4 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-white dark:bg-gray-900
-                             border border-gray-100 dark:border-gray-800
-                             rounded-3xl p-7 shadow-soft
-                             hover:shadow-medium transition-all duration-300"
-                >
-                  <div className="w-12 h-12 rounded-2xl
-                                  bg-[#671372]/09 dark:bg-[#671372]/18
-                                  flex items-center justify-center mb-5">
-                    <Icon size={21} className="text-[#671372] dark:text-[#c44cf0]" />
-                  </div>
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2.5">
-                    {label}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                    {desc}
-                  </p>
-                </motion.div>
-              </AnimatedSection>
-            ))}
+            {displayInterests.map((interest, i) => {
+              const Icon = ICON_MAP[interest.icon] ?? Star
+              return (
+                <AnimatedSection key={interest.id} delay={i * 0.09}>
+                  <motion.div
+                    whileHover={{ y: -4 }}
+                    transition={{ duration: 0.2 }}
+                    className="relative bg-white dark:bg-gray-900
+                               border border-gray-100 dark:border-gray-800
+                               rounded-3xl p-7 shadow-soft
+                               hover:shadow-medium transition-all duration-300"
+                  >
+                    {isAdmin && (
+                      <div className="absolute top-4 right-4 flex items-center gap-1">
+                        <button
+                          onClick={() => setEditingInterest(interest)}
+                          title="Edit interest"
+                          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <PenLine size={13} className="text-gray-400" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInterest(interest)}
+                          disabled={deletingInterestId === interest.id}
+                          title="Delete interest"
+                          className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 size={13} className="text-gray-400 hover:text-red-500" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="w-12 h-12 rounded-2xl
+                                    bg-[#671372]/09 dark:bg-[#671372]/18
+                                    flex items-center justify-center mb-5">
+                      <Icon size={21} className="text-[#671372] dark:text-[#c44cf0]" />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2.5 pr-12">
+                      {interest.label}
+                    </h3>
+                    <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                      {interest.desc}
+                    </p>
+                  </motion.div>
+                </AnimatedSection>
+              )
+            })}
           </div>
         </Container>
       </section>
@@ -749,6 +1339,50 @@ export default function AboutClient({ timelineNodes }: { timelineNodes: Timeline
             nextOrder={nextOrder}
             onClose={() => setEditingNode(null)}
             onSuccess={() => { setEditingNode(null); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Skill Section Modals ══════════════════════════ */}
+      <AnimatePresence>
+        {showAddSkillSection && (
+          <SkillSectionFormModal
+            nextOrder={nextSkillOrder}
+            onClose={() => setShowAddSkillSection(false)}
+            onSuccess={() => { setShowAddSkillSection(false); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingSkillSection && (
+          <SkillSectionFormModal
+            section={editingSkillSection}
+            nextOrder={nextSkillOrder}
+            onClose={() => setEditingSkillSection(null)}
+            onSuccess={() => { setEditingSkillSection(null); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Interest Modals ═══════════════════════════════ */}
+      <AnimatePresence>
+        {showAddInterest && (
+          <InterestFormModal
+            nextOrder={nextInterestOrder}
+            onClose={() => setShowAddInterest(false)}
+            onSuccess={() => { setShowAddInterest(false); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingInterest && (
+          <InterestFormModal
+            interest={editingInterest}
+            nextOrder={nextInterestOrder}
+            onClose={() => setEditingInterest(null)}
+            onSuccess={() => { setEditingInterest(null); router.refresh() }}
           />
         )}
       </AnimatePresence>
