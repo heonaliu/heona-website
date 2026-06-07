@@ -79,6 +79,21 @@ const staticInterests = [
   { icon: 'Music',    label: 'Piano',        desc: 'Classical pieces, movie soundtracks, and occasional improvisation.' },
 ]
 
+const staticLearningCards = [
+  {
+    key: 'learning',
+    emoji: '📚',
+    title: 'Currently Learning',
+    items: ['Advanced ML & Neural Networks', 'System Design & Architecture', 'Web3 & Solidity (exploring)', 'Piano — Chopin Nocturnes', '3D Modeling in Blender'],
+  },
+  {
+    key: 'building',
+    emoji: '🔨',
+    title: 'What I Enjoy Building',
+    items: ['Tools that solve real everyday problems', 'Beautiful, accessible web experiences', 'Creative coding experiments', 'Automations that save hours', 'Things that make people smile'],
+  },
+]
+
 /* ─── Components ─────────────────────────────────────── */
 function SectionDivider({ className = '' }: { className?: string }) {
   return <div className={`border-t border-gray-100 dark:border-gray-800 ${className}`} />
@@ -638,17 +653,182 @@ function InterestFormModal({
   )
 }
 
+// ─── Edit Bullet List Modal (Currently Learning / What I Enjoy Building) ───────
+function BulletListFormModal({
+  onClose,
+  onSuccess,
+  cardKey,
+  emoji,
+  title,
+  items: initialItems,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+  cardKey: string
+  emoji: string
+  title: string
+  items: string[]
+}) {
+  const [items, setItems] = useState<string[]>(initialItems.length ? initialItems : [''])
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const cleaned = items.map((i) => i.trim()).filter(Boolean)
+    if (cleaned.length === 0) { setError('Add at least one bullet point'); return }
+
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) {
+        setError('You are not signed in. Please sign in as admin and try again.')
+        return
+      }
+      const { saveAboutCardItems } = await import('@/lib/about-cards-firestore')
+      await saveAboutCardItems(cardKey, cleaned)
+      onSuccess()
+    } catch (err: any) {
+      console.error('[BulletListForm]', err)
+      const msg = err?.message || String(err)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — check your Firestore security rules.')
+      } else {
+        setError(msg || 'Failed to save. Please try again.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const input = `w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700
+                 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white
+                 placeholder-gray-400 focus:outline-none focus:ring-2
+                 focus:ring-[#671372]/25 focus:border-[#671372]/40 transition-all`
+  const label = `block text-xs font-semibold uppercase tracking-wider
+                 text-gray-500 dark:text-gray-400 mb-1.5`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                 flex items-start justify-center overflow-y-auto py-8 px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-6
+                        border-b border-gray-100 dark:border-gray-800">
+          <h2 className="flex items-center gap-2.5 text-lg font-bold text-gray-900 dark:text-white">
+            <span>{emoji}</span> Edit &ldquo;{title}&rdquo;
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
+                       flex items-center justify-center
+                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={14} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+
+          <div>
+            <label className={label}>Bullet Points *</label>
+            <div className="space-y-2">
+              {items.map((it, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    value={it}
+                    onChange={(e) => {
+                      const next = [...items]; next[i] = e.target.value
+                      setItems(next)
+                    }}
+                    placeholder={`Bullet point ${i + 1}`}
+                    className={`${input} flex-1`}
+                  />
+                  {items.length > 1 && (
+                    <button type="button"
+                            onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}
+                            className="px-3 rounded-xl bg-gray-100 dark:bg-gray-800
+                                       text-gray-400 hover:bg-red-50 hover:text-red-500
+                                       dark:hover:bg-red-900/20 transition-colors">
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={() => setItems((prev) => [...prev, ''])}
+                      className="text-xs text-[#671372] dark:text-[#c44cf0] hover:underline">
+                + Add bullet point
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold
+                         text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <motion.button
+              type="submit"
+              disabled={submitting}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-6 py-2.5 rounded-full bg-[#671372] text-white text-sm font-semibold
+                         shadow-purple-lg hover:bg-[#8B1D9F] transition-all disabled:opacity-50"
+            >
+              {submitting ? 'Saving…' : 'Save Changes'}
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 export default function AboutClient({
   timelineNodes,
   skillSections,
   interests,
+  cardOverrides,
 }: {
   timelineNodes: TimelineNode[]
   skillSections: SkillSection[]
   interests: InterestNode[]
+  cardOverrides: Record<string, string[]>
 }) {
   const { isAdmin } = useAuth()
   const router = useRouter()
+
+  const [editingCard, setEditingCard] = useState<{ key: string; emoji: string; title: string; items: string[] } | null>(null)
+  const displayLearningCards = staticLearningCards.map((card) => ({
+    ...card,
+    items: cardOverrides[card.key] ?? card.items,
+  }))
 
   const usingCustomTimeline = timelineNodes.length > 0
   const buildNodes = (nodes: TimelineNode[]): TimelineNode[] =>
@@ -962,24 +1142,23 @@ export default function AboutClient({
         <Container>
           <div className="grid md:grid-cols-2 gap-8">
 
-            {[
-              {
-                emoji: '📚',
-                title: 'Currently Learning',
-                items: ['Advanced ML & Neural Networks', 'System Design & Architecture', 'Web3 & Solidity (exploring)', 'Piano — Chopin Nocturnes', '3D Modeling in Blender'],
-              },
-              {
-                emoji: '🔨',
-                title: 'What I Enjoy Building',
-                items: ['Tools that solve real everyday problems', 'Beautiful, accessible web experiences', 'Creative coding experiments', 'Automations that save hours', 'Things that make people smile'],
-              },
-            ].map((card, i) => (
-              <AnimatedSection key={card.title} delay={i * 0.1}>
-                <div className="bg-white dark:bg-gray-900
+            {displayLearningCards.map((card, i) => (
+              <AnimatedSection key={card.key} delay={i * 0.1}>
+                <div className="relative bg-white dark:bg-gray-900
                                 border border-gray-100 dark:border-gray-800
                                 rounded-3xl p-8 shadow-soft h-full">
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingCard(card)}
+                      title="Edit bullet points"
+                      className="absolute top-5 right-5 p-2 rounded-xl
+                                 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <PenLine size={14} className="text-gray-400" />
+                    </button>
+                  )}
                   <h2 className="flex items-center gap-3 text-base font-bold
-                                 text-gray-900 dark:text-white mb-6">
+                                 text-gray-900 dark:text-white mb-6 pr-10">
                     <span className="w-9 h-9 rounded-xl bg-[#671372]/10 dark:bg-[#671372]/20
                                      flex items-center justify-center text-lg flex-shrink-0">
                       {card.emoji}
@@ -1383,6 +1562,20 @@ export default function AboutClient({
             nextOrder={nextInterestOrder}
             onClose={() => setEditingInterest(null)}
             onSuccess={() => { setEditingInterest(null); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Bullet List Modal (Currently Learning / What I Enjoy Building) ══ */}
+      <AnimatePresence>
+        {editingCard && (
+          <BulletListFormModal
+            cardKey={editingCard.key}
+            emoji={editingCard.emoji}
+            title={editingCard.title}
+            items={editingCard.items}
+            onClose={() => setEditingCard(null)}
+            onSuccess={() => { setEditingCard(null); router.refresh() }}
           />
         )}
       </AnimatePresence>
