@@ -2,13 +2,22 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine } from 'lucide-react'
+import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
 import { useAuth } from '@/context/AuthContext'
-import type { ArtworkOverride } from '@/lib/artworks-firestore'
+import type { ArtworkOverride, CustomArtwork } from '@/lib/artworks-firestore'
+
+const ART_GRADIENT_PRESETS = [
+  'from-purple-400 via-pink-500 to-rose-400',
+  'from-blue-400 via-cyan-500 to-teal-400',
+  'from-orange-400 via-amber-400 to-yellow-300',
+  'from-violet-500 via-purple-500 to-indigo-500',
+  'from-green-400 via-emerald-400 to-teal-500',
+  'from-rose-400 via-pink-400 to-fuchsia-500',
+]
 
 const staticArtworks = [
   {
@@ -74,7 +83,7 @@ const staticArtworks = [
 ]
 
 type StaticArtwork = typeof staticArtworks[0]
-type Artwork = StaticArtwork & { imageUrl: string | null }
+type Artwork = StaticArtwork & { imageUrl: string | null; isCustom?: boolean; docId?: string }
 
 const artJourney = [
   { year: '2018', milestone: 'First sketches with pencil and paper. Just doodles at first.' },
@@ -98,6 +107,7 @@ function EditArtworkModal({
   const router = useRouter()
   const [title, setTitle]            = useState(art.title)
   const [year, setYear]              = useState(art.year)
+  const [medium, setMedium]          = useState(art.medium)
   const [reflection, setReflection]  = useState(art.reflection)
   const [imageUrl, setImageUrl]      = useState(art.imageUrl ?? '')
   const [tags, setTags]              = useState<string[]>(art.tags)
@@ -124,6 +134,7 @@ function EditArtworkModal({
         imageUrl:   imageUrl.trim()   || undefined,
         title:      title.trim()      || undefined,
         year:       year.trim()       || undefined,
+        medium:     medium.trim()     || undefined,
         reflection: reflection.trim() || undefined,
         tags:       tags.length       ? tags : undefined,
       })
@@ -216,6 +227,17 @@ function EditArtworkModal({
               value={year}
               onChange={(e) => setYear(e.target.value)}
               placeholder="2024"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Medium / Software */}
+          <div>
+            <label className={labelCls}>Software / Medium</label>
+            <input
+              value={medium}
+              onChange={(e) => setMedium(e.target.value)}
+              placeholder="Procreate, Photoshop, p5.js…"
               className={inputCls}
             />
           </div>
@@ -322,25 +344,311 @@ function EditArtworkModal({
   )
 }
 
+// ─── Add / Edit Custom Artwork Modal ───────────────────────────────────────────
+function ArtworkFormModal({
+  artwork,
+  onClose,
+  onSuccess,
+}: {
+  artwork?: CustomArtwork
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const router = useRouter()
+  const isEdit = !!artwork
+
+  const [title, setTitle]             = useState(artwork?.title ?? '')
+  const [medium, setMedium]           = useState(artwork?.medium ?? '')
+  const [year, setYear]               = useState(artwork?.year ?? new Date().getFullYear().toString())
+  const [description, setDescription] = useState(artwork?.description ?? '')
+  const [reflection, setReflection]   = useState(artwork?.reflection ?? '')
+  const [imageUrl, setImageUrl]       = useState(artwork?.imageUrl ?? '')
+  const [tags, setTags]               = useState<string[]>(artwork?.tags ?? [])
+  const [tagInput, setTagInput]       = useState('')
+  const [gradient, setGradient]       = useState(artwork?.gradient ?? ART_GRADIENT_PRESETS[0])
+  const [imgError, setImgError]       = useState(false)
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState<string | null>(null)
+
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase()
+    if (t && !tags.includes(t)) setTags((prev) => [...prev, t])
+    setTagInput('')
+  }
+  const removeTag = (t: string) => setTags((prev) => prev.filter((x) => x !== t))
+
+  const handleSave = async () => {
+    if (!title.trim()) { setError('Title is required.'); return }
+    setSaving(true)
+    setError(null)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { setError('Not signed in as admin.'); return }
+      const payload = {
+        title: title.trim(),
+        medium: medium.trim(),
+        year: year.trim(),
+        description: description.trim(),
+        reflection: reflection.trim(),
+        imageUrl: imageUrl.trim(),
+        tags,
+        gradient,
+      }
+      if (isEdit && artwork) {
+        const { updateCustomArtwork } = await import('@/lib/artworks-firestore')
+        await updateCustomArtwork(artwork.id, payload)
+      } else {
+        const { addCustomArtwork } = await import('@/lib/artworks-firestore')
+        await addCustomArtwork(payload)
+      }
+      router.refresh()
+      onSuccess()
+    } catch (e: any) {
+      const msg = e?.message || String(e)
+      if (msg.includes('permission-denied') || msg.includes('Missing or insufficient permissions')) {
+        setError('Permission denied — add custom_artworks to your Firestore rules.')
+      } else {
+        setError(msg || 'Failed to save.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputCls = `w-full px-4 py-2.5 rounded-xl
+                    border border-gray-200 dark:border-gray-700
+                    bg-white dark:bg-gray-800
+                    text-sm text-gray-900 dark:text-white placeholder-gray-400
+                    focus:outline-none focus:ring-2 focus:ring-[#671372]/25
+                    focus:border-[#671372]/40 transition-all`
+  const labelCls = `block text-xs font-semibold uppercase tracking-wider
+                    text-gray-500 dark:text-gray-400 mb-1.5`
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm
+                 flex items-start justify-center overflow-y-auto py-8 px-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+        className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 py-5
+                        border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            {isEdit ? 'Edit Artwork' : 'Add Artwork'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
+                       flex items-center justify-center
+                       hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={14} className="text-gray-600 dark:text-gray-300" />
+          </button>
+        </div>
+
+        <div className="p-7 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* Image URL + preview */}
+          <div>
+            <label className={labelCls}>Image URL</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImgError(false) }}
+              placeholder="https://i.imgur.com/..."
+              className={inputCls}
+            />
+            <div className="relative mt-2.5 w-full h-36 rounded-2xl overflow-hidden">
+              {imageUrl.trim() && !imgError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl.trim()}
+                  alt="preview"
+                  onError={() => setImgError(true)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                  <span className="text-xs text-white/50">
+                    {imgError ? 'Could not load image — check the URL' : 'Preview (paste a URL above)'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Gradient preset (fallback color) */}
+          <div>
+            <label className={labelCls}>Fallback Color</label>
+            <div className="flex gap-2.5 flex-wrap">
+              {ART_GRADIENT_PRESETS.map((g) => (
+                <button
+                  key={g} type="button" onClick={() => setGradient(g)}
+                  className={`w-9 h-9 rounded-full bg-gradient-to-br ${g} transition-all ${
+                    gradient === g
+                      ? 'ring-2 ring-[#671372] ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
+                      : ''
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className={labelCls}>Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)}
+                   placeholder="Artwork title" className={inputCls} />
+          </div>
+
+          {/* Medium + Year */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Software / Medium</label>
+              <input value={medium} onChange={(e) => setMedium(e.target.value)}
+                     placeholder="Procreate, Photoshop…" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Year</label>
+              <input value={year} onChange={(e) => setYear(e.target.value)}
+                     placeholder="2024" className={inputCls} />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className={labelCls}>Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                      placeholder="A short description of this piece…" rows={2}
+                      className={`${inputCls} resize-none`} />
+          </div>
+
+          {/* Artist's Note */}
+          <div>
+            <label className={labelCls}>Artist&apos;s Note</label>
+            <textarea value={reflection} onChange={(e) => setReflection(e.target.value)}
+                      placeholder="Share your thoughts on this piece…" rows={3}
+                      className={`${inputCls} resize-none`} />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className={labelCls}>Tags</label>
+            <div className="flex gap-2">
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                placeholder="e.g. abstract, nature…"
+                className={`${inputCls} flex-1`}
+              />
+              <button type="button" onClick={addTag}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold
+                                 bg-[#671372]/10 dark:bg-[#671372]/25
+                                 text-[#671372] dark:text-[#c44cf0]
+                                 hover:bg-[#671372]/20 dark:hover:bg-[#671372]/35
+                                 transition-colors flex-shrink-0">
+                Add
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.map((t) => (
+                  <span key={t}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+                                   bg-[#671372]/10 dark:bg-[#671372]/25
+                                   text-[#671372] dark:text-[#c44cf0]">
+                    {t}
+                    <button type="button" onClick={() => removeTag(t)}
+                            className="hover:text-red-500 transition-colors ml-0.5">
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-full text-sm font-medium
+                         text-gray-600 dark:text-gray-400
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2.5 rounded-full text-sm font-semibold
+                         bg-[#671372] text-white hover:bg-[#8B1D9F]
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         transition-all shadow-purple-lg"
+            >
+              {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Artwork'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
-export default function ArtClient({ overrides }: { overrides: Record<string, ArtworkOverride> }) {
+export default function ArtClient({
+  overrides,
+  customArtworks,
+}: {
+  overrides: Record<string, ArtworkOverride>
+  customArtworks: CustomArtwork[]
+}) {
   const { isAdmin } = useAuth()
 
-  const artworks: Artwork[] = staticArtworks.map((a) => {
+  const overriddenStatic: Artwork[] = staticArtworks.map((a) => {
     const o = overrides[a.id]
     return {
       ...a,
       title:      o?.title      ?? a.title,
       year:       o?.year       ?? a.year,
+      medium:     o?.medium     ?? a.medium,
       reflection: o?.reflection ?? a.reflection,
       imageUrl:   o?.imageUrl   ?? null,
       tags:       o?.tags       ?? a.tags,
     }
   })
 
-  const [selected, setSelected] = useState<Artwork | null>(null)
-  const [filter, setFilter]     = useState('all')
-  const [editing, setEditing]   = useState<Artwork | null>(null)
+  const customAsArtworks: Artwork[] = customArtworks.map((c) => ({
+    id: c.id,
+    title: c.title,
+    medium: c.medium,
+    year: c.year,
+    description: c.description,
+    reflection: c.reflection,
+    gradient: c.gradient,
+    tags: c.tags,
+    imageUrl: c.imageUrl || null,
+    isCustom: true,
+    docId: c.id,
+  }))
+
+  const artworks: Artwork[] = [...overriddenStatic, ...customAsArtworks]
+
+  const [selected, setSelected]   = useState<Artwork | null>(null)
+  const [filter, setFilter]       = useState('all')
+  const [editing, setEditing]     = useState<Artwork | null>(null)
+  const [showAddArtwork, setShowAddArtwork] = useState(false)
 
   const allTags  = ['all', ...Array.from(new Set(artworks.flatMap((a) => a.tags)))]
   const filtered = filter === 'all' ? artworks : artworks.filter((a) => a.tags.includes(filter))
@@ -355,18 +663,35 @@ export default function ArtClient({ overrides }: { overrides: Record<string, Art
       {/* ══ Hero ══════════════════════════════════════════ */}
       <section className="section-white pt-32 pb-14 lg:pt-40 lg:pb-20">
         <Container>
-          <AnimatedSection>
-            <SectionLabel>Creative Work</SectionLabel>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
-                           leading-[1.1] tracking-tight
-                           text-gray-900 dark:text-white mb-4">
-              Art Gallery
-            </h1>
-            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
-              Digital illustrations, character designs, and creative experiments.
-              Click any piece for a closer look.
-            </p>
-          </AnimatedSection>
+          <div className="flex items-end justify-between gap-6">
+            <AnimatedSection className="flex-1">
+              <SectionLabel>Creative Work</SectionLabel>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
+                             leading-[1.1] tracking-tight
+                             text-gray-900 dark:text-white mb-4">
+                Art Gallery
+              </h1>
+              <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
+                Digital illustrations, character designs, and creative experiments.
+                Click any piece for a closer look.
+              </p>
+            </AnimatedSection>
+
+            {isAdmin && (
+              <AnimatedSection direction="left">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowAddArtwork(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full
+                             bg-[#671372] text-white text-sm font-semibold
+                             shadow-purple-lg hover:bg-[#8B1D9F] transition-all"
+                >
+                  <Plus size={15} /> Add Artwork
+                </motion.button>
+              </AnimatedSection>
+            )}
+          </div>
         </Container>
       </section>
 
@@ -686,11 +1011,38 @@ export default function ArtClient({ overrides }: { overrides: Record<string, Art
 
       {/* ══ Edit Artwork Modal ════════════════════════════ */}
       <AnimatePresence>
-        {editing && (
+        {editing && !editing.isCustom && (
           <EditArtworkModal
             art={editing}
             onClose={() => setEditing(null)}
             onSuccess={() => setEditing(null)}
+          />
+        )}
+        {editing && editing.isCustom && (
+          <ArtworkFormModal
+            artwork={{
+              id: editing.docId ?? editing.id,
+              title: editing.title,
+              medium: editing.medium,
+              year: editing.year,
+              description: editing.description,
+              reflection: editing.reflection,
+              imageUrl: editing.imageUrl ?? '',
+              tags: editing.tags,
+              gradient: editing.gradient,
+            }}
+            onClose={() => setEditing(null)}
+            onSuccess={() => setEditing(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Add Artwork Modal ═════════════════════════════ */}
+      <AnimatePresence>
+        {showAddArtwork && (
+          <ArtworkFormModal
+            onClose={() => setShowAddArtwork(false)}
+            onSuccess={() => setShowAddArtwork(false)}
           />
         )}
       </AnimatePresence>

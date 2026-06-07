@@ -22,8 +22,13 @@ export default function BlogClient({ posts }: Props) {
   const { isAdmin } = useAuth()
   const router = useRouter()
 
+  const categoryTabs = ['achievements', 'self growth', 'experiences'].filter((tab) =>
+    posts.some((p) => p.tags.some((t) => t.toLowerCase() === tab.toLowerCase()))
+  )
+  const tabs = ['all', ...categoryTabs]
+
   const filtered = posts.filter((p) => {
-    const matchTag = activeTag === 'all' || p.tags.includes(activeTag)
+    const matchTag = activeTag === 'all' || p.tags.some((t) => t.toLowerCase() === activeTag.toLowerCase())
     const matchSearch = !search ||
       p.title.toLowerCase().includes(search.toLowerCase()) ||
       p.excerpt.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,7 +106,7 @@ export default function BlogClient({ posts }: Props) {
             {/* Tabs */}
             <AnimatedSection delay={0.05} className="flex-1">
               <div className="flex flex-wrap gap-1.5">
-                {['all', 'achievements', 'self growth', 'experiences'].map((tab) => (
+                {tabs.map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTag(tab)}

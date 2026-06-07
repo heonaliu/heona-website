@@ -25,7 +25,7 @@ export async function getProjectsFromFirestore(): Promise<Project[]> {
         color: d.color || 'from-[#671372]/25 to-[#8B1D9F]/15',
         github: d.github || null,
         demo: d.demo || null,
-        status: (d.status as 'live' | 'wip') || 'wip',
+        status: (d.status as Project['status']) || 'wip',
         year: d.year || new Date().getFullYear().toString(),
         inspiration: d.inspiration || '',
         problem: d.problem || '',

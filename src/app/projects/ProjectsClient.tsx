@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ExternalLink, Github, Search, X, ChevronRight,
-  Clock, Zap, Plus, PenLine,
+  Clock, Zap, Plus, PenLine, Link2, Pause, CircleSlash,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -28,25 +28,38 @@ interface Props {
 }
 
 // ─── Status badge ──────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }: { status: string }) =>
-  status === 'live' ? (
-    <span className="absolute top-3 right-3 inline-flex items-center gap-1.5
-                     px-2.5 py-1 rounded-full
-                     bg-emerald-100 dark:bg-emerald-900/40
-                     text-emerald-700 dark:text-emerald-400
-                     text-[10px] font-semibold">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-      Live
-    </span>
-  ) : (
-    <span className="absolute top-3 right-3 inline-flex items-center gap-1.5
-                     px-2.5 py-1 rounded-full
-                     bg-amber-100 dark:bg-amber-900/40
-                     text-amber-700 dark:text-amber-400
-                     text-[10px] font-semibold">
-      <Clock size={9} /> In progress
+const STATUS_CONFIG: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+  live: {
+    label: 'Live',
+    className: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+    icon: <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />,
+  },
+  wip: {
+    label: 'In progress',
+    className: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+    icon: <Clock size={9} />,
+  },
+  paused: {
+    label: 'Paused',
+    className: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400',
+    icon: <Pause size={9} />,
+  },
+  'not-deployed': {
+    label: 'Not deployed',
+    className: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+    icon: <CircleSlash size={9} />,
+  },
+}
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.wip
+  return (
+    <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5
+                       px-2.5 py-1 rounded-full text-[10px] font-semibold ${cfg.className}`}>
+      {cfg.icon} {cfg.label}
     </span>
   )
+}
 
 // ─── Add / Edit Project Modal ──────────────────────────────────────────────────
 function ProjectFormModal({
@@ -64,7 +77,7 @@ function ProjectFormModal({
   const [description, setDescription]   = useState(project?.description ?? '')
   const [longDescription, setLongDescription] = useState(project?.longDescription ?? '')
   const [year, setYear]                 = useState(project?.year ?? new Date().getFullYear().toString())
-  const [status, setStatus]             = useState<'live' | 'wip'>(project?.status ?? 'wip')
+  const [status, setStatus]             = useState<Project['status']>(project?.status ?? 'wip')
   const [github, setGithub]             = useState(project?.github ?? '')
   const [demo, setDemo]                 = useState(project?.demo ?? '')
   const [color, setColor]               = useState(project?.color ?? GRADIENT_PRESETS[0])
@@ -272,10 +285,12 @@ function ProjectFormModal({
             </div>
             <div>
               <label className={label}>Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value as 'live' | 'wip')}
+              <select value={status} onChange={(e) => setStatus(e.target.value as Project['status'])}
                       className={input}>
                 <option value="wip">In Progress</option>
                 <option value="live">Live</option>
+                <option value="paused">Paused</option>
+                <option value="not-deployed">Not Deployed</option>
               </select>
             </div>
           </div>
@@ -416,7 +431,7 @@ function ProjectFormModal({
             <label className={label}>Other Links <span className="normal-case font-normal text-gray-400">(optional)</span></label>
             <div className="space-y-2">
               {otherLinks.map((link, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="flex flex-col sm:flex-row gap-2">
                   <input
                     value={link.title}
                     onChange={(e) => {
@@ -425,27 +440,29 @@ function ProjectFormModal({
                       setOtherLinks(next)
                     }}
                     placeholder="Label (e.g. Demo Video)"
-                    className={`${input} w-36 shrink-0`}
+                    className={`${input} sm:w-36 sm:shrink-0 min-w-0`}
                   />
-                  <input
-                    value={link.url}
-                    onChange={(e) => {
-                      const next = [...otherLinks]
-                      next[i] = { ...next[i], url: e.target.value }
-                      setOtherLinks(next)
-                    }}
-                    placeholder="https://..."
-                    className={`${input} flex-1`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setOtherLinks((prev) => prev.filter((_, j) => j !== i))}
-                    className="px-3 rounded-xl bg-gray-100 dark:bg-gray-800
-                               text-gray-400 hover:bg-red-50 hover:text-red-500
-                               dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <X size={13} />
-                  </button>
+                  <div className="flex gap-2 min-w-0">
+                    <input
+                      value={link.url}
+                      onChange={(e) => {
+                        const next = [...otherLinks]
+                        next[i] = { ...next[i], url: e.target.value }
+                        setOtherLinks(next)
+                      }}
+                      placeholder="https://..."
+                      className={`${input} flex-1 min-w-0`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setOtherLinks((prev) => prev.filter((_, j) => j !== i))}
+                      className="px-3 rounded-xl bg-gray-100 dark:bg-gray-800
+                                 text-gray-400 hover:bg-red-50 hover:text-red-500
+                                 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <button
@@ -724,6 +741,28 @@ export default function ProjectsClient({ projects }: Props) {
                             </button>
                           )}
                         </div>
+
+                        {/* Other links — small linked tags below the card */}
+                        {project.otherLinks && project.otherLinks.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-3">
+                            {project.otherLinks.map((link) => (
+                              <a
+                                key={link.url}
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium
+                                           bg-[#671372]/8 dark:bg-[#671372]/20
+                                           text-[#671372] dark:text-[#c44cf0]
+                                           hover:bg-[#671372] hover:text-white
+                                           transition-all duration-200"
+                              >
+                                <Link2 size={10} /> {link.title}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   </motion.div>

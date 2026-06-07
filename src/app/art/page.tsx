@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getArtworkOverrides } from '@/lib/artworks-firestore'
+import { getArtworkOverrides, getCustomArtworks } from '@/lib/artworks-firestore'
 import ArtClient from './ArtClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,9 @@ export const metadata: Metadata = {
 }
 
 export default async function ArtPage() {
-  const overrides = await getArtworkOverrides()
-  return <ArtClient overrides={overrides} />
+  const [overrides, customArtworks] = await Promise.all([
+    getArtworkOverrides(),
+    getCustomArtworks(),
+  ])
+  return <ArtClient overrides={overrides} customArtworks={customArtworks} />
 }

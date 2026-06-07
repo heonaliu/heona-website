@@ -7,7 +7,7 @@ export interface Project {
   color: string
   github: string | null
   demo: string | null
-  status: 'live' | 'wip'
+  status: 'live' | 'wip' | 'paused' | 'not-deployed'
   year: string
   inspiration: string
   problem: string
