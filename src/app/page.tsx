@@ -4,14 +4,30 @@ import FeaturedProjects from '@/components/sections/FeaturedProjects'
 import FeaturedArt from '@/components/sections/FeaturedArt'
 import LatestBlog from '@/components/sections/LatestBlog'
 import ContactCTA from '@/components/sections/ContactCTA'
+import { getProjectsFromFirestore } from '@/lib/projects-firestore'
+import { getArtworkOverrides, getCustomArtworks } from '@/lib/artworks-firestore'
+import { buildArtworkList } from '@/lib/artworks'
+import { getPostsFromFirestore } from '@/lib/blog-firestore'
+import { getFeaturedSelections } from '@/lib/home-featured-firestore'
 
-export default function Home() {
+export const dynamic = 'force-dynamic'
+
+export default async function Home() {
+  const [projects, overrides, customArtworks, posts, featured] = await Promise.all([
+    getProjectsFromFirestore(),
+    getArtworkOverrides(),
+    getCustomArtworks(),
+    getPostsFromFirestore(),
+    getFeaturedSelections(),
+  ])
+  const artworks = buildArtworkList(overrides, customArtworks)
+
   return (
     <>
       <Hero />
-      <FeaturedProjects />
-      <FeaturedArt />
-      <LatestBlog />
+      <FeaturedProjects projects={projects} selectedIds={featured.projects} />
+      <FeaturedArt artworks={artworks} selectedIds={featured.art} />
+      <LatestBlog posts={posts} selectedIds={featured.posts} />
       <ContactCTA />
     </>
   )
