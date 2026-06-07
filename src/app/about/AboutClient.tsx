@@ -350,7 +350,8 @@ export default function AboutClient({ timelineNodes }: { timelineNodes: Timeline
     }
   }
 
-  const nextOrder = localNodes.length ? Math.max(...localNodes.map((n) => n.order)) + 1 : 0
+  // New nodes are placed at the top of the timeline (most recent first)
+  const nextOrder = localNodes.length ? Math.min(...localNodes.map((n) => n.order)) - 1 : 0
 
   return (
     <div className="min-h-screen layout-safe">
