@@ -69,6 +69,14 @@ export async function updateProjectInFirestore(
   await updateDoc(doc(db, 'projects', docId), { ...data })
 }
 
+export async function deleteProjectFromFirestore(docId: string): Promise<void> {
+  const db = await getDb()
+  if (!db) throw new Error('Firestore not initialized')
+
+  const { doc, deleteDoc } = await import('firebase/firestore')
+  await deleteDoc(doc(db, 'projects', docId))
+}
+
 export async function addProjectToFirestore(
   data: Omit<Project, 'id' | 'docId'>,
 ): Promise<string> {

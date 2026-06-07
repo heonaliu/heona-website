@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine, Plus } from 'lucide-react'
+import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
@@ -616,18 +616,20 @@ export default function ArtClient({
 }) {
   const { isAdmin } = useAuth()
 
-  const overriddenStatic: Artwork[] = staticArtworks.map((a) => {
-    const o = overrides[a.id]
-    return {
-      ...a,
-      title:      o?.title      ?? a.title,
-      year:       o?.year       ?? a.year,
-      medium:     o?.medium     ?? a.medium,
-      reflection: o?.reflection ?? a.reflection,
-      imageUrl:   o?.imageUrl   ?? null,
-      tags:       o?.tags       ?? a.tags,
-    }
-  })
+  const overriddenStatic: Artwork[] = staticArtworks
+    .filter((a) => !overrides[a.id]?.hidden)
+    .map((a) => {
+      const o = overrides[a.id]
+      return {
+        ...a,
+        title:      o?.title      ?? a.title,
+        year:       o?.year       ?? a.year,
+        medium:     o?.medium     ?? a.medium,
+        reflection: o?.reflection ?? a.reflection,
+        imageUrl:   o?.imageUrl   ?? null,
+        tags:       o?.tags       ?? a.tags,
+      }
+    })
 
   const customAsArtworks: Artwork[] = customArtworks.map((c) => ({
     id: c.id,
@@ -649,6 +651,31 @@ export default function ArtClient({
   const [filter, setFilter]       = useState('all')
   const [editing, setEditing]     = useState<Artwork | null>(null)
   const [showAddArtwork, setShowAddArtwork] = useState(false)
+  const [deleting, setDeleting]   = useState<string | null>(null)
+  const router = useRouter()
+
+  const handleDelete = async (art: Artwork) => {
+    const verb = art.isCustom ? 'permanently delete' : 'remove'
+    if (!window.confirm(`Are you sure you want to ${verb} "${art.title}"? This cannot be undone.`)) return
+    setDeleting(art.id)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      if (art.isCustom && art.docId) {
+        const { deleteCustomArtwork } = await import('@/lib/artworks-firestore')
+        await deleteCustomArtwork(art.docId)
+      } else {
+        const { saveArtworkOverrides } = await import('@/lib/artworks-firestore')
+        await saveArtworkOverrides(art.id, { hidden: true })
+      }
+      if (selected?.id === art.id) setSelected(null)
+      router.refresh()
+    } catch (e: any) {
+      window.alert(e?.message || 'Failed to delete.')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const allTags  = ['all', ...Array.from(new Set(artworks.flatMap((a) => a.tags)))]
   const filtered = filter === 'all' ? artworks : artworks.filter((a) => a.tags.includes(filter))
@@ -782,20 +809,33 @@ export default function ArtClient({
                     <p className="text-white/65 text-xs mt-1">{art.year}</p>
                   </div>
 
-                  {/* Admin edit button */}
+                  {/* Admin edit / delete buttons */}
                   {isAdmin && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setEditing(art) }}
-                      title="Edit image"
-                      className="absolute top-2.5 right-2.5 z-30
-                                 w-7 h-7 rounded-full
-                                 bg-black/40 hover:bg-[#671372]
-                                 flex items-center justify-center
-                                 text-white opacity-0 group-hover:opacity-100
-                                 transition-all duration-200"
-                    >
-                      <PenLine size={13} />
-                    </button>
+                    <div className="absolute top-2.5 right-2.5 z-30 flex gap-1.5
+                                    opacity-0 group-hover:opacity-100 transition-all duration-200">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditing(art) }}
+                        title="Edit artwork"
+                        className="w-7 h-7 rounded-full
+                                   bg-black/40 hover:bg-[#671372]
+                                   flex items-center justify-center
+                                   text-white transition-colors duration-200"
+                      >
+                        <PenLine size={13} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(art) }}
+                        disabled={deleting === art.id}
+                        title="Delete artwork"
+                        className="w-7 h-7 rounded-full
+                                   bg-black/40 hover:bg-red-600
+                                   flex items-center justify-center
+                                   text-white transition-colors duration-200
+                                   disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   )}
                 </motion.div>
               ))}
@@ -934,19 +974,31 @@ export default function ArtClient({
                   <ChevronRight size={18} />
                 </button>
 
-                {/* Admin edit button in lightbox */}
+                {/* Admin edit / delete buttons in lightbox */}
                 {isAdmin && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setEditing(selected); setSelected(null) }}
-                    title="Edit image"
-                    className="absolute top-3 left-3 z-30
-                               flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                               bg-black/40 hover:bg-[#671372]
-                               text-white text-xs font-medium
-                               transition-all duration-200"
-                  >
-                    <PenLine size={12} /> Edit image
-                  </button>
+                  <div className="absolute top-3 left-3 z-30 flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditing(selected); setSelected(null) }}
+                      title="Edit artwork"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                                 bg-black/40 hover:bg-[#671372]
+                                 text-white text-xs font-medium
+                                 transition-all duration-200"
+                    >
+                      <PenLine size={12} /> Edit
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(selected) }}
+                      disabled={deleting === selected.id}
+                      title="Delete artwork"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                                 bg-black/40 hover:bg-red-600
+                                 text-white text-xs font-medium
+                                 transition-all duration-200 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </div>
                 )}
               </div>
 

@@ -32,6 +32,7 @@ export async function getPostsFromFirestore(includeDrafts = false): Promise<Blog
 
       return {
         slug: d.slug || doc.id,
+        docId: doc.id,
         title: d.title || 'Untitled',
         excerpt: d.excerpt || '',
         date,
@@ -51,6 +52,14 @@ export async function getPostsFromFirestore(includeDrafts = false): Promise<Blog
     console.error('[blog-firestore] getPostsFromFirestore:', e)
     return []
   }
+}
+
+export async function deletePostFromFirestore(docId: string): Promise<void> {
+  const db = await getDb()
+  if (!db) throw new Error('Firestore not initialized')
+
+  const { doc, deleteDoc } = await import('firebase/firestore')
+  await deleteDoc(doc(db, 'posts', docId))
 }
 
 /** Returns the post plus its Firestore document ID — used by the edit page. */

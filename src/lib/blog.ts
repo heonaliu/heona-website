@@ -7,6 +7,7 @@ const BLOG_DIR = path.join(process.cwd(), 'content', 'blog')
 
 export interface BlogPost {
   slug: string
+  docId?: string
   title: string
   excerpt: string
   date: string

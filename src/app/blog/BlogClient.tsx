@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Clock, PenLine, Plus, X, BookOpen, ArrowRight, FileText } from 'lucide-react'
+import { Search, Clock, PenLine, Plus, X, BookOpen, ArrowRight, FileText, Trash2 } from 'lucide-react'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
@@ -21,6 +21,28 @@ export default function BlogClient({ posts }: Props) {
   const [activeTag, setActiveTag] = useState('all')
   const { isAdmin } = useAuth()
   const router = useRouter()
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  const handleDelete = async (post: BlogPost, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!post.docId) {
+      window.alert('Could not find this post in the database.')
+      return
+    }
+    if (!window.confirm(`Permanently delete "${post.title}"? This cannot be undone.`)) return
+    setDeleting(post.docId)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      const { deletePostFromFirestore } = await import('@/lib/blog-firestore')
+      await deletePostFromFirestore(post.docId)
+      router.refresh()
+    } catch (err: any) {
+      window.alert(err?.message || 'Failed to delete.')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const categoryTabs = ['achievements', 'self growth', 'experiences'].filter((tab) =>
     posts.some((p) => p.tags.some((t) => t.toLowerCase() === tab.toLowerCase()))
@@ -201,16 +223,29 @@ export default function BlogClient({ posts }: Props) {
                           </div>
                         </div>
 
-                        {/* Arrow / Admin edit */}
+                        {/* Arrow / Admin edit + delete */}
                         {isAdmin ? (
-                          <Link
-                            href={`/blog/${post.slug}/edit`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-shrink-0 p-2 rounded-xl
-                                       hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                          >
-                            <PenLine size={14} className="text-gray-400" />
-                          </Link>
+                          <div className="flex-shrink-0 flex items-center gap-1">
+                            <Link
+                              href={`/blog/${post.slug}/edit`}
+                              onClick={(e) => e.stopPropagation()}
+                              title="Edit post"
+                              className="p-2 rounded-xl
+                                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                              <PenLine size={14} className="text-gray-400" />
+                            </Link>
+                            <button
+                              onClick={(e) => handleDelete(post, e)}
+                              disabled={deleting === post.docId}
+                              title="Delete post"
+                              className="p-2 rounded-xl
+                                         hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors
+                                         disabled:opacity-50"
+                            >
+                              <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
+                            </button>
+                          </div>
                         ) : (
                           <ArrowRight
                             size={15}

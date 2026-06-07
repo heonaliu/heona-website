@@ -5,6 +5,7 @@ export interface ArtworkOverride {
   medium?: string
   reflection?: string
   tags?: string[]
+  hidden?: boolean
 }
 
 export interface CustomArtwork {
@@ -41,6 +42,7 @@ export async function getArtworkOverrides(): Promise<Record<string, ArtworkOverr
         medium:     d.medium     || undefined,
         reflection: d.reflection || undefined,
         tags:       Array.isArray(d.tags) && d.tags.length ? d.tags : undefined,
+        hidden:     d.hidden     || undefined,
       }
     })
     return overrides
@@ -108,4 +110,12 @@ export async function updateCustomArtwork(id: string, data: Omit<CustomArtwork, 
   if (!db) throw new Error('Firestore not initialized')
   const { doc, updateDoc } = await import('firebase/firestore')
   await updateDoc(doc(db, 'custom_artworks', id), { ...data })
+}
+
+/** Permanently removes an admin-added artwork (admin-only). */
+export async function deleteCustomArtwork(id: string): Promise<void> {
+  const db = await getDb()
+  if (!db) throw new Error('Firestore not initialized')
+  const { doc, deleteDoc } = await import('firebase/firestore')
+  await deleteDoc(doc(db, 'custom_artworks', id))
 }

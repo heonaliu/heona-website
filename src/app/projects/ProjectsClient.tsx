@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ExternalLink, Github, Search, X, ChevronRight,
-  Clock, Zap, Plus, PenLine, Link2, Pause, CircleSlash,
+  Clock, Zap, Plus, PenLine, Link2, Pause, CircleSlash, Trash2,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -511,13 +511,28 @@ export default function ProjectsClient({ projects }: Props) {
   const [selected, setSelected]   = useState<Project | null>(null)
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Project | null>(null)
+  const [deleting, setDeleting]   = useState<string | null>(null)
 
-  // Log to diagnose docId presence when a project is selected
-  React.useEffect(() => {
-    if (selected && isAdmin) {
-      console.log('[ProjectsClient] selected project:', { id: selected.id, docId: selected.docId, title: selected.title })
+  const handleDelete = async (project: Project) => {
+    if (!project.docId) {
+      window.alert('This is a static placeholder project and cannot be deleted from here.')
+      return
     }
-  }, [selected, isAdmin])
+    if (!window.confirm(`Permanently delete "${project.title}"? This cannot be undone.`)) return
+    setDeleting(project.docId)
+    try {
+      const { auth } = await import('@/lib/firebase')
+      if (!auth?.currentUser) { window.alert('Not signed in as admin.'); return }
+      const { deleteProjectFromFirestore } = await import('@/lib/projects-firestore')
+      await deleteProjectFromFirestore(project.docId)
+      if (selected?.id === project.id) setSelected(null)
+      router.refresh()
+    } catch (e: any) {
+      window.alert(e?.message || 'Failed to delete.')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const derivedTags = ['All', ...Array.from(new Set(projects.flatMap((p) => p.tags))).sort()]
 
@@ -727,18 +742,32 @@ export default function ProjectsClient({ projects }: Props) {
                             </button>
                           )}
 
-                          {/* Admin edit button — always on the card so it's reachable even when demo link hides Details */}
+                          {/* Admin edit / delete buttons — always on the card so reachable even when demo link hides Details */}
                           {isAdmin && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditing(project) }}
-                              className="ml-auto w-7 h-7 rounded-full flex items-center justify-center
-                                         text-gray-400 dark:text-gray-500
-                                         hover:bg-[#671372]/10 hover:text-[#671372] dark:hover:text-[#c44cf0]
-                                         transition-all duration-200"
-                              title="Edit project"
-                            >
-                              <PenLine size={13} />
-                            </button>
+                            <div className="ml-auto flex items-center gap-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditing(project) }}
+                                className="w-7 h-7 rounded-full flex items-center justify-center
+                                           text-gray-400 dark:text-gray-500
+                                           hover:bg-[#671372]/10 hover:text-[#671372] dark:hover:text-[#c44cf0]
+                                           transition-all duration-200"
+                                title="Edit project"
+                              >
+                                <PenLine size={13} />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDelete(project) }}
+                                disabled={deleting === project.docId}
+                                className="w-7 h-7 rounded-full flex items-center justify-center
+                                           text-gray-400 dark:text-gray-500
+                                           hover:bg-red-50 hover:text-red-500
+                                           dark:hover:bg-red-900/20 dark:hover:text-red-400
+                                           transition-all duration-200 disabled:opacity-50"
+                                title="Delete project"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           )}
                         </div>
 
@@ -824,21 +853,39 @@ export default function ProjectsClient({ projects }: Props) {
                 <X size={15} className="text-gray-600 dark:text-gray-300" />
               </button>
 
-              {/* Edit button — visible to admin for all projects */}
+              {/* Edit / Delete buttons — visible to admin for all projects */}
               {isAdmin && (
-                <button
-                  onClick={() => { setEditing(selected); setSelected(null) }}
-                  className="absolute top-4 right-[3.25rem]
-                             w-9 h-9 rounded-full
-                             bg-white/80 dark:bg-gray-700
-                             border border-gray-200 dark:border-gray-600
-                             text-gray-600 dark:text-gray-300
-                             flex items-center justify-center
-                             hover:bg-[#671372] hover:border-[#671372] hover:text-white
-                             transition-colors shadow-soft"
-                >
-                  <PenLine size={15} />
-                </button>
+                <>
+                  <button
+                    onClick={() => { setEditing(selected); setSelected(null) }}
+                    className="absolute top-4 right-[3.25rem]
+                               w-9 h-9 rounded-full
+                               bg-white/80 dark:bg-gray-700
+                               border border-gray-200 dark:border-gray-600
+                               text-gray-600 dark:text-gray-300
+                               flex items-center justify-center
+                               hover:bg-[#671372] hover:border-[#671372] hover:text-white
+                               transition-colors shadow-soft"
+                    title="Edit project"
+                  >
+                    <PenLine size={15} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selected)}
+                    disabled={deleting === selected.docId}
+                    className="absolute top-4 right-[5.5rem]
+                               w-9 h-9 rounded-full
+                               bg-white/80 dark:bg-gray-700
+                               border border-gray-200 dark:border-gray-600
+                               text-gray-600 dark:text-gray-300
+                               flex items-center justify-center
+                               hover:bg-red-500 hover:border-red-500 hover:text-white
+                               transition-colors shadow-soft disabled:opacity-50"
+                    title="Delete project"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </>
               )}
 
               <div style={{ padding: '1.75rem' }} className="space-y-6">
