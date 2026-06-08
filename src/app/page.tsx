@@ -9,22 +9,25 @@ import { getArtworkOverrides, getCustomArtworks } from '@/lib/artworks-firestore
 import { buildArtworkList } from '@/lib/artworks'
 import { getPostsFromFirestore } from '@/lib/blog-firestore'
 import { getFeaturedSelections } from '@/lib/home-featured-firestore'
+import { getPageHeaderOverrides, getHeroChipOverrides } from '@/lib/page-content-firestore'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const [projects, overrides, customArtworks, posts, featured] = await Promise.all([
+  const [projects, overrides, customArtworks, posts, featured, headerOverrides, chipOverrides] = await Promise.all([
     getProjectsFromFirestore(),
     getArtworkOverrides(),
     getCustomArtworks(),
     getPostsFromFirestore(),
     getFeaturedSelections(),
+    getPageHeaderOverrides(),
+    getHeroChipOverrides(),
   ])
   const artworks = buildArtworkList(overrides, customArtworks)
 
   return (
     <>
-      <Hero />
+      <Hero headerOverride={headerOverrides.home} chipOverrides={chipOverrides} />
       <FeaturedProjects projects={projects} selectedIds={featured.projects} />
       <FeaturedArt artworks={artworks} selectedIds={featured.art} />
       <LatestBlog posts={posts} selectedIds={featured.posts} />

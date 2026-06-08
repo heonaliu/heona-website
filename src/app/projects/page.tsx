@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getProjectsFromFirestore } from '@/lib/projects-firestore'
+import { getPageHeaderOverrides } from '@/lib/page-content-firestore'
 import ProjectsClient from './ProjectsClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,9 @@ export const metadata: Metadata = {
 }
 
 export default async function ProjectsPage() {
-  const projects = await getProjectsFromFirestore()
-  return <ProjectsClient projects={projects} />
+  const [projects, headerOverrides] = await Promise.all([
+    getProjectsFromFirestore(),
+    getPageHeaderOverrides(),
+  ])
+  return <ProjectsClient projects={projects} headerOverride={headerOverrides.projects} />
 }

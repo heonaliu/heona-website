@@ -3,6 +3,7 @@ import { getTimelineNodes } from '@/lib/timeline-firestore'
 import { getSkillSections } from '@/lib/skills-firestore'
 import { getInterests } from '@/lib/interests-firestore'
 import { getAboutCardOverrides } from '@/lib/about-cards-firestore'
+import { getPageHeaderOverrides } from '@/lib/page-content-firestore'
 import AboutClient from './AboutClient'
 
 export const dynamic = 'force-dynamic'
@@ -13,11 +14,12 @@ export const metadata: Metadata = {
 }
 
 export default async function AboutPage() {
-  const [timelineNodes, skillSections, interests, cardOverrides] = await Promise.all([
+  const [timelineNodes, skillSections, interests, cardOverrides, headerOverrides] = await Promise.all([
     getTimelineNodes(),
     getSkillSections(),
     getInterests(),
     getAboutCardOverrides(),
+    getPageHeaderOverrides(),
   ])
   return (
     <AboutClient
@@ -25,6 +27,7 @@ export default async function AboutPage() {
       skillSections={skillSections}
       interests={interests}
       cardOverrides={cardOverrides}
+      headerOverride={headerOverrides.about}
     />
   )
 }

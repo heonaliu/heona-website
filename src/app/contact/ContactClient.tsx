@@ -1,11 +1,15 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, Github, Linkedin, Send, CheckCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mail, Github, Linkedin, Send, CheckCircle, PenLine } from 'lucide-react'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
+import EditTextFieldsModal from '@/components/ui/EditTextFieldsModal'
+import { useAuth } from '@/context/AuthContext'
+import type { PageHeaderOverride } from '@/lib/page-content-firestore'
 
 const socialLinks = [
   { Icon: Github,   label: 'GitHub',   handle: '@heonaliu',          href: 'https://github.com/heonaliu' },
@@ -13,10 +17,33 @@ const socialLinks = [
   { Icon: Mail,     label: 'Email',    handle: 'heonaliu@gmail.com', href: 'mailto:heonaliu@gmail.com' },
 ]
 
-export default function ContactClient() {
+interface Props {
+  headerOverride?: PageHeaderOverride
+}
+
+const DEFAULT_HEADER = {
+  title: "Let's Connect",
+  subtitle: "Whether it's a project idea, a collaboration, or just saying hello — my inbox is always open.",
+}
+
+export default function ContactClient({ headerOverride }: Props) {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const { isAdmin } = useAuth()
+  const router = useRouter()
+  const [editingHeader, setEditingHeader] = useState(false)
+
+  const headerTitle = headerOverride?.title ?? DEFAULT_HEADER.title
+  const headerSubtitle = headerOverride?.subtitle ?? DEFAULT_HEADER.subtitle
+
+  const handleSaveHeader = async (values: Record<string, string>) => {
+    const { auth } = await import('@/lib/firebase')
+    if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
+    const { savePageHeader } = await import('@/lib/page-content-firestore')
+    await savePageHeader('contact', { title: values.title.trim(), subtitle: values.subtitle.trim() })
+    router.refresh()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,15 +67,25 @@ export default function ContactClient() {
       <section className="section-white pt-32 pb-14 lg:pt-40 lg:pb-20">
         <Container>
           <AnimatedSection>
-            <SectionLabel>Get In Touch</SectionLabel>
+            <div className="flex items-start gap-2">
+              <SectionLabel>Get In Touch</SectionLabel>
+              {isAdmin && (
+                <button
+                  onClick={() => setEditingHeader(true)}
+                  title="Edit header"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <PenLine size={12} className="text-gray-400" />
+                </button>
+              )}
+            </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
                            leading-[1.1] tracking-tight
                            text-gray-900 dark:text-white mb-4">
-              Let&apos;s Connect
+              {headerTitle}
             </h1>
             <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-md leading-relaxed">
-              Whether it&apos;s a project idea, a collaboration, or just saying hello —
-              my inbox is always open.
+              {headerSubtitle}
             </p>
           </AnimatedSection>
         </Container>
@@ -244,6 +281,21 @@ export default function ContactClient() {
           </div>
         </Container>
       </section>
+
+      {/* ══ Edit Header ═══════════════════════════════════ */}
+      <AnimatePresence>
+        {editingHeader && (
+          <EditTextFieldsModal
+            heading="Edit Page Header"
+            fields={[
+              { key: 'title', label: 'Title', value: headerTitle },
+              { key: 'subtitle', label: 'Subtitle', value: headerSubtitle, multiline: true },
+            ]}
+            onClose={() => setEditingHeader(false)}
+            onSave={handleSaveHeader}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

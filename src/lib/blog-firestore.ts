@@ -68,15 +68,20 @@ export async function getPostForEditing(slug: string): Promise<{ post: BlogPost;
     const db = await getDb()
     if (!db) return null
 
-    const { collection, getDocs, query, where } = await import('firebase/firestore')
+    const { collection, getDocs, getDoc, doc: docRef, query, where } = await import('firebase/firestore')
     const postsRef = collection(db, 'posts')
     const q = query(postsRef, where('slug', '==', slug))
     const snapshot = await getDocs(q)
 
-    if (snapshot.empty) return null
+    let docSnap = snapshot.docs[0]
+    if (!docSnap) {
+      // Older drafts may have been saved without a `slug` field — fall back to a direct document-ID lookup.
+      const direct = await getDoc(docRef(db, 'posts', slug))
+      if (!direct.exists()) return null
+      docSnap = direct as typeof docSnap
+    }
 
-    const doc = snapshot.docs[0]
-    const d = doc.data()
+    const d = docSnap.data()
     const { default: readingTime } = await import('reading-time')
     const stats = readingTime(d.content || '')
     const ts = d.publishedAt ?? d.createdAt
@@ -89,10 +94,10 @@ export async function getPostForEditing(slug: string): Promise<{ post: BlogPost;
       : new Date().toISOString().slice(0, 10)
 
     return {
-      docId: doc.id,
+      docId: docSnap.id,
       dateISO,
       post: {
-        slug: d.slug || doc.id,
+        slug: d.slug || docSnap.id,
         title: d.title || '',
         excerpt: d.excerpt || '',
         date,

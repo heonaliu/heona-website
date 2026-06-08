@@ -11,8 +11,10 @@ import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
+import EditTextFieldsModal from '@/components/ui/EditTextFieldsModal'
 import { useAuth } from '@/context/AuthContext'
 import type { Project } from '@/lib/projects'
+import type { PageHeaderOverride } from '@/lib/page-content-firestore'
 
 const GRADIENT_PRESETS = [
   'from-[#671372]/25 to-[#8B1D9F]/15',
@@ -25,6 +27,12 @@ const GRADIENT_PRESETS = [
 
 interface Props {
   projects: Project[]
+  headerOverride?: PageHeaderOverride
+}
+
+const DEFAULT_HEADER = {
+  title: 'Projects',
+  subtitle: "Things I've built, experiments I've run, and ideas I've shipped.",
 }
 
 // ─── Status badge ──────────────────────────────────────────────────────────────
@@ -498,7 +506,7 @@ function ProjectFormModal({
 }
 
 // ─── Main component ────────────────────────────────────────────────────────────
-export default function ProjectsClient({ projects }: Props) {
+export default function ProjectsClient({ projects, headerOverride }: Props) {
   const router = useRouter()
   const { isAdmin } = useAuth()
 
@@ -509,6 +517,18 @@ export default function ProjectsClient({ projects }: Props) {
   const [editing, setEditing]     = useState<Project | null>(null)
   const [deleting, setDeleting]   = useState<string | null>(null)
   const [reordering, setReordering] = useState(false)
+  const [editingHeader, setEditingHeader] = useState(false)
+
+  const headerTitle = headerOverride?.title ?? DEFAULT_HEADER.title
+  const headerSubtitle = headerOverride?.subtitle ?? DEFAULT_HEADER.subtitle
+
+  const handleSaveHeader = async (values: Record<string, string>) => {
+    const { auth } = await import('@/lib/firebase')
+    if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
+    const { savePageHeader } = await import('@/lib/page-content-firestore')
+    await savePageHeader('projects', { title: values.title.trim(), subtitle: values.subtitle.trim() })
+    router.refresh()
+  }
 
   // One-time migration: assign sequential `order` values to existing projects
   // that don't have one yet, so admin reordering has a starting point.
@@ -592,14 +612,25 @@ export default function ProjectsClient({ projects }: Props) {
         <Container>
           <div className="flex items-end justify-between gap-6">
             <AnimatedSection className="flex-1">
-              <SectionLabel>Work</SectionLabel>
+              <div className="flex items-start gap-2">
+                <SectionLabel>Work</SectionLabel>
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingHeader(true)}
+                    title="Edit header"
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <PenLine size={12} className="text-gray-400" />
+                  </button>
+                )}
+              </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
                              leading-[1.1] tracking-tight
                              text-gray-900 dark:text-white mb-4">
-                Projects
+                {headerTitle}
               </h1>
               <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-lg leading-relaxed">
-                Things I&apos;ve built, experiments I&apos;ve run, and ideas I&apos;ve shipped.
+                {headerSubtitle}
               </p>
             </AnimatedSection>
 
@@ -1079,6 +1110,21 @@ export default function ProjectsClient({ projects }: Props) {
             project={editing}
             onClose={() => setEditing(null)}
             onSuccess={() => { setEditing(null); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Header ═══════════════════════════════════ */}
+      <AnimatePresence>
+        {editingHeader && (
+          <EditTextFieldsModal
+            heading="Edit Page Header"
+            fields={[
+              { key: 'title', label: 'Title', value: headerTitle },
+              { key: 'subtitle', label: 'Subtitle', value: headerSubtitle, multiline: true },
+            ]}
+            onClose={() => setEditingHeader(false)}
+            onSave={handleSaveHeader}
           />
         )}
       </AnimatePresence>

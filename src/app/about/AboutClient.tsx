@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react'
 import Image from 'next/image'
 import { motion, Reorder, AnimatePresence } from 'framer-motion'
 import {
-  Download, Code2, Palette, Music, Activity, Zap, Star, Coffee, BookOpen,
+  Code2, Palette, Music, Activity, Zap, Star, Coffee, BookOpen,
   Heart, Lightbulb, Rocket, Trophy, Target, Sparkles, GraduationCap, Briefcase,
   Plus, PenLine, Trash2, X, GripVertical,
 } from 'lucide-react'
@@ -12,10 +12,20 @@ import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
+import EditTextFieldsModal from '@/components/ui/EditTextFieldsModal'
 import { useAuth } from '@/context/AuthContext'
 import type { TimelineNode } from '@/lib/timeline-firestore'
 import type { SkillSection } from '@/lib/skills-firestore'
 import type { InterestNode } from '@/lib/interests-firestore'
+import type { PageHeaderOverride } from '@/lib/page-content-firestore'
+
+const DEFAULT_HEADER = {
+  title: "A CS student who can't stop creating",
+  subtitle:
+    "Hi! I'm Heona — a computer science student with a deep passion for building things that matter. I love the intersection of technical precision and creative expression, which is why I spend equal time writing code and making art.\n\n" +
+    "Whether it's architecting a clean backend, designing an intuitive UI, or illustrating a digital piece from scratch — I approach everything with curiosity and a desire to make it just right.\n\n" +
+    "When I'm not at my desk you'll find me on a badminton court, at a piano, or wherever curiosity leads next.",
+}
 
 const ICON_OPTIONS = [
   { key: 'Code2', Icon: Code2 },
@@ -81,6 +91,12 @@ const staticInterests = [
 ]
 
 const staticLearningCards = [
+  {
+    key: 'roles',
+    emoji: '💼',
+    title: 'Current Roles',
+    items: ['Coding Instructor @ Penguin Coding School', 'Computer Science Student'],
+  },
   {
     key: 'learning',
     emoji: '📚',
@@ -816,16 +832,31 @@ export default function AboutClient({
   skillSections,
   interests,
   cardOverrides,
+  headerOverride,
 }: {
   timelineNodes: TimelineNode[]
   skillSections: SkillSection[]
   interests: InterestNode[]
   cardOverrides: Record<string, string[]>
+  headerOverride?: PageHeaderOverride
 }) {
   const { isAdmin } = useAuth()
   const router = useRouter()
 
   const [editingCard, setEditingCard] = useState<{ key: string; emoji: string; title: string; items: string[] } | null>(null)
+  const [editingHeader, setEditingHeader] = useState(false)
+
+  const headerTitle = headerOverride?.title ?? DEFAULT_HEADER.title
+  const headerSubtitle = headerOverride?.subtitle ?? DEFAULT_HEADER.subtitle
+
+  const handleSaveHeader = async (values: Record<string, string>) => {
+    const { auth } = await import('@/lib/firebase')
+    if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
+    const { savePageHeader } = await import('@/lib/page-content-firestore')
+    await savePageHeader('about', { title: values.title.trim(), subtitle: values.subtitle.trim() })
+    router.refresh()
+  }
+
   const displayLearningCards = staticLearningCards.map((card) => ({
     ...card,
     items: cardOverrides[card.key] ?? card.items,
@@ -1049,44 +1080,58 @@ export default function AboutClient({
 
             {/* Copy */}
             <AnimatedSection>
-              <SectionLabel>About Me</SectionLabel>
-
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
-                             leading-[1.1] tracking-tight
-                             text-gray-900 dark:text-white mb-6">
-                A CS student who{' '}
-                <span className="gradient-text">can&apos;t stop creating</span>
-              </h1>
-
-              <div className="space-y-4 text-[15px] leading-relaxed text-gray-600 dark:text-gray-400 max-w-lg mb-8">
-                <p>
-                  Hi! I&apos;m Heona — a computer science student with a deep passion
-                  for building things that matter. I love the intersection of technical
-                  precision and creative expression, which is why I spend equal time
-                  writing code and making art.
-                </p>
-                <p>
-                  Whether it&apos;s architecting a clean backend, designing an intuitive UI,
-                  or illustrating a digital piece from scratch — I approach everything
-                  with curiosity and a desire to make it <em>just right</em>.
-                </p>
-                <p>
-                  When I&apos;m not at my desk you&apos;ll find me on a badminton court,
-                  at a piano, or wherever curiosity leads next.
-                </p>
+              <div className="flex items-start gap-2">
+                <SectionLabel>About Me</SectionLabel>
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingHeader(true)}
+                    title="Edit header"
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <PenLine size={12} className="text-gray-400" />
+                  </button>
+                )}
               </div>
 
-              <motion.a
-                href="/resume.pdf"
-                download
-                whileHover={{ scale: 1.03, y: -1 }}
-                whileTap={{ scale: 0.97 }}
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full
-                           bg-[#671372] hover:bg-[#8B1D9F] text-white text-sm font-semibold
-                           shadow-purple-lg transition-all duration-200"
-              >
-                <Download size={14} /> Download Resume
-              </motion.a>
+              {headerOverride?.title ? (
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
+                               leading-[1.1] tracking-tight
+                               text-gray-900 dark:text-white mb-6">
+                  {headerOverride.title}
+                </h1>
+              ) : (
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold
+                               leading-[1.1] tracking-tight
+                               text-gray-900 dark:text-white mb-6">
+                  A CS student who{' '}
+                  <span className="gradient-text">can&apos;t stop creating</span>
+                </h1>
+              )}
+
+              {headerOverride?.subtitle ? (
+                <div className="space-y-4 text-[15px] leading-relaxed text-gray-600 dark:text-gray-400 max-w-lg mb-8 whitespace-pre-line">
+                  {headerOverride.subtitle}
+                </div>
+              ) : (
+                <div className="space-y-4 text-[15px] leading-relaxed text-gray-600 dark:text-gray-400 max-w-lg mb-8">
+                  <p>
+                    Hi! I&apos;m Heona — a computer science student with a deep passion
+                    for building things that matter. I love the intersection of technical
+                    precision and creative expression, which is why I spend equal time
+                    writing code and making art.
+                  </p>
+                  <p>
+                    Whether it&apos;s architecting a clean backend, designing an intuitive UI,
+                    or illustrating a digital piece from scratch — I approach everything
+                    with curiosity and a desire to make it <em>just right</em>.
+                  </p>
+                  <p>
+                    When I&apos;m not at my desk you&apos;ll find me on a badminton court,
+                    at a piano, or wherever curiosity leads next.
+                  </p>
+                </div>
+              )}
+
             </AnimatedSection>
 
             {/* Visual card */}
@@ -1135,10 +1180,10 @@ export default function AboutClient({
         </Container>
       </section>
 
-      {/* ══ Currently / Building ══════════════════════════ */}
+      {/* ══ Roles / Currently / Building ══════════════════ */}
       <section className="section-tint py-20 lg:py-24">
         <Container>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
 
             {displayLearningCards.map((card, i) => (
               <AnimatedSection key={card.key} delay={i * 0.1}>
@@ -1574,6 +1619,21 @@ export default function AboutClient({
             items={editingCard.items}
             onClose={() => setEditingCard(null)}
             onSuccess={() => { setEditingCard(null); router.refresh() }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Header ═══════════════════════════════════ */}
+      <AnimatePresence>
+        {editingHeader && (
+          <EditTextFieldsModal
+            heading="Edit Page Header"
+            fields={[
+              { key: 'title', label: 'Title', value: headerTitle },
+              { key: 'subtitle', label: 'Subtitle', value: headerSubtitle, multiline: true },
+            ]}
+            onClose={() => setEditingHeader(false)}
+            onSave={handleSaveHeader}
           />
         )}
       </AnimatePresence>

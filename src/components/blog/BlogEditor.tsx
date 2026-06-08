@@ -103,8 +103,15 @@ export default function BlogEditor({
         })
       } else {
         const { collection, addDoc } = await import('firebase/firestore')
+        const slug = title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+
         await addDoc(collection(db, 'posts'), {
-          title, content, excerpt, tags,
+          slug, title, content, excerpt, tags,
           draft: true, published: false,
           publishedAt,
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(),

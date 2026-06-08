@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   ArrowRight,
   Sparkles,
@@ -12,8 +13,12 @@ import {
   Terminal,
   Github,
   Mail,
+  PenLine,
 } from "lucide-react";
 import Container from "@/components/ui/Container";
+import EditTextFieldsModal from "@/components/ui/EditTextFieldsModal";
+import { useAuth } from "@/context/AuthContext";
+import type { PageHeaderOverride, HeroChipOverride } from "@/lib/page-content-firestore";
 
 /* ─── Animation variants ─────────────────────────── */
 const container: Variants = {
@@ -32,7 +37,45 @@ const roles = [
   { Icon: Hammer, label: "Builder" },
 ];
 
-export default function Hero() {
+const DEFAULT_BIO =
+  "I build things for the web, create digital art, and explore the intersection where engineering meets creativity. CS student — driven by curiosity and a love of thoughtful design."
+
+const DEFAULT_CHIPS: Record<string, { label: string; sublabel: string }> = {
+  chip1: { label: "TypeScript", sublabel: "Favourite language" },
+  chip2: { label: "Making art", sublabel: "Currently" },
+}
+
+interface Props {
+  headerOverride?: PageHeaderOverride
+  chipOverrides?: Record<string, HeroChipOverride>
+}
+
+export default function Hero({ headerOverride, chipOverrides }: Props) {
+  const { isAdmin } = useAuth()
+  const router = useRouter()
+  const [editingBio, setEditingBio] = useState(false)
+  const [editingChip, setEditingChip] = useState<string | null>(null)
+
+  const bio = headerOverride?.subtitle ?? DEFAULT_BIO
+  const chip1 = { ...DEFAULT_CHIPS.chip1, ...chipOverrides?.chip1 }
+  const chip2 = { ...DEFAULT_CHIPS.chip2, ...chipOverrides?.chip2 }
+
+  const handleSaveBio = async (values: Record<string, string>) => {
+    const { auth } = await import("@/lib/firebase")
+    if (!auth?.currentUser) throw new Error("You are not signed in. Please sign in as admin and try again.")
+    const { savePageHeader } = await import("@/lib/page-content-firestore")
+    await savePageHeader("home", { subtitle: values.subtitle.trim() })
+    router.refresh()
+  }
+
+  const handleSaveChip = (chipId: string) => async (values: Record<string, string>) => {
+    const { auth } = await import("@/lib/firebase")
+    if (!auth?.currentUser) throw new Error("You are not signed in. Please sign in as admin and try again.")
+    const { saveHeroChip } = await import("@/lib/page-content-firestore")
+    await saveHeroChip(chipId, { label: values.label.trim(), sublabel: values.sublabel.trim() })
+    router.refresh()
+  }
+
   return (
     <section
       className="
@@ -150,8 +193,6 @@ export default function Hero() {
                       whitespace-nowrap
                       text-gray-700 dark:text-gray-300
                       shadow-soft
-                      hover:bg-[#671372] hover:text-white hover:border-[#671372]
-                      transition-all duration-200
                     "
                   >
                     <Icon
@@ -164,20 +205,28 @@ export default function Hero() {
               </motion.div>
 
               {/* Bio */}
-              <motion.p
-                variants={item}
-                className="
-                text-lg sm:text-xl
-                leading-[1.9]
-                text-gray-600 dark:text-gray-400
-                mb-8
-                max-w-xl
-              "
-              >
-                I build things for the web, create digital art, and explore the
-                intersection where engineering meets creativity. CS student —
-                driven by curiosity and a love of thoughtful design.
-              </motion.p>
+              <motion.div variants={item} className="relative max-w-xl mb-8 group/bio">
+                <p
+                  className="
+                  text-lg sm:text-xl
+                  leading-[1.9]
+                  text-gray-600 dark:text-gray-400
+                "
+                >
+                  {bio}
+                </p>
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingBio(true)}
+                    title="Edit bio"
+                    className="absolute -right-9 top-0 p-1.5 rounded-lg
+                               opacity-0 group-hover/bio:opacity-100
+                               hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                  >
+                    <PenLine size={13} className="text-gray-400" />
+                  </button>
+                )}
+              </motion.div>
 
               {/* CTAs */}
               <motion.div
@@ -195,23 +244,6 @@ export default function Hero() {
                              shadow-purple-lg transition-all duration-200"
                   >
                     View Projects <ArrowRight size={14} />
-                  </motion.button>
-                </Link>
-                <Link href="/blog">
-                  <motion.button
-                    whileHover={{ scale: 1.04, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
-                    style={{ padding: "0.5rem 1rem" }}
-                    className="
-                      flex items-center gap-2 px-8 py-4 rounded-full
-                      border
-                      bg-white dark:bg-gray-800
-                      border-gray-200 dark:border-gray-700
-                      text-[15px]
-                      font-medium
-                      shadow-purple-lg transition-all duration-200"
-                  >
-                    Read Blog
                   </motion.button>
                 </Link>
                 <Link href="/contact">
@@ -339,6 +371,7 @@ export default function Hero() {
               {/* Decorative floating chips — outside main panel but within 320/360px container */}
               <div
                 className="
+                  group/chip
                   absolute top-0 right-0
                   translate-x-1/4 -translate-y-1/4
                   bg-white dark:bg-gray-800
@@ -347,17 +380,29 @@ export default function Hero() {
                   shadow-medium z-10
                   "
               >
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingChip("chip1")}
+                    title="Edit badge"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full
+                               bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                               flex items-center justify-center shadow-soft
+                               opacity-0 group-hover/chip:opacity-100 transition-opacity"
+                  >
+                    <PenLine size={11} className="text-gray-400" />
+                  </button>
+                )}
                 <div className="flex items-center gap-2">
                   <Code2
                     size={14}
                     className="text-[#671372] dark:text-[#c44cf0]"
                   />
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    TypeScript
+                    {chip1.label}
                   </span>
                 </div>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                  Favourite language
+                  {chip1.sublabel}
                 </p>
               </div>
 
@@ -370,6 +415,7 @@ export default function Hero() {
                   delay: 1.2,
                 }}
                 className="
+                  group/chip
                   absolute bottom-0 left-0
                   -translate-x-1/4 translate-y-1/4
                   bg-white dark:bg-gray-800
@@ -380,14 +426,26 @@ export default function Hero() {
                   z-10
                   "
               >
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditingChip("chip2")}
+                    title="Edit badge"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full
+                               bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                               flex items-center justify-center shadow-soft
+                               opacity-0 group-hover/chip:opacity-100 transition-opacity"
+                  >
+                    <PenLine size={11} className="text-gray-400" />
+                  </button>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-[15px]">🎵</span>
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    Making art
+                    {chip2.label}
                   </span>
                 </div>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                  Currently
+                  {chip2.sublabel}
                 </p>
               </motion.div>
             </div>
@@ -413,6 +471,33 @@ export default function Hero() {
           <div className="w-1 h-1.5 bg-[#671372] dark:bg-[#c44cf0] rounded-full" />
         </motion.div>
       </motion.div>
+
+      {/* ══ Edit Bio ══════════════════════════════════════ */}
+      <AnimatePresence>
+        {editingBio && (
+          <EditTextFieldsModal
+            heading="Edit Bio"
+            fields={[{ key: "subtitle", label: "Bio", value: bio, multiline: true }]}
+            onClose={() => setEditingBio(false)}
+            onSave={handleSaveBio}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Floating Badge ═══════════════════════════ */}
+      <AnimatePresence>
+        {editingChip && (
+          <EditTextFieldsModal
+            heading="Edit Badge"
+            fields={[
+              { key: "label", label: "Label", value: editingChip === "chip1" ? chip1.label : chip2.label },
+              { key: "sublabel", label: "Sublabel", value: editingChip === "chip1" ? chip1.sublabel : chip2.sublabel },
+            ]}
+            onClose={() => setEditingChip(null)}
+            onSave={handleSaveChip(editingChip)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

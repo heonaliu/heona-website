@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getPostsFromFirestore } from '@/lib/blog-firestore'
+import { getPageHeaderOverrides } from '@/lib/page-content-firestore'
 import BlogClient from './BlogClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
 }
 
 export default async function BlogPage() {
-  const posts = await getPostsFromFirestore()
+  const [posts, headerOverrides] = await Promise.all([
+    getPostsFromFirestore(),
+    getPageHeaderOverrides(),
+  ])
   const tags = Array.from(new Set(posts.flatMap((p) => p.tags))).sort()
-  return <BlogClient posts={posts} tags={tags} />
+  return <BlogClient posts={posts} tags={tags} headerOverride={headerOverrides.blog} />
 }
