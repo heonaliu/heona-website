@@ -13,11 +13,17 @@ import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
 import SectionLabel from '@/components/ui/SectionLabel'
 import EditTextFieldsModal from '@/components/ui/EditTextFieldsModal'
+import LinkedText from '@/components/ui/LinkedText'
 import { useAuth } from '@/context/AuthContext'
 import type { TimelineNode } from '@/lib/timeline-firestore'
 import type { SkillSection } from '@/lib/skills-firestore'
 import type { InterestNode } from '@/lib/interests-firestore'
-import type { PageHeaderOverride } from '@/lib/page-content-firestore'
+import type { PageHeaderOverride, HeroChipOverride, AboutPhotoOverride } from '@/lib/page-content-firestore'
+
+const DEFAULT_PHOTO_CHIPS: Record<string, { label: string; sublabel: string }> = {
+  chip1: { label: 'TypeScript 💙', sublabel: 'Favourite language' },
+  chip2: { label: 'This site ✨', sublabel: 'Currently building' },
+}
 
 const DEFAULT_HEADER = {
   title: "A CS student who can't stop creating",
@@ -264,6 +270,9 @@ function TimelineFormModal({
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
                       rows={3} placeholder="A short description of this milestone..."
                       className={`${input} resize-none`} />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Add a link with <code className="font-mono">[label](https://example.com)</code>
+            </p>
           </div>
 
           {error && (
@@ -635,6 +644,9 @@ function InterestFormModal({
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)}
                       rows={3} placeholder="A short description of this interest..."
                       className={`${inputCls} resize-none`} />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Add a link with <code className="font-mono">[label](https://example.com)</code>
+            </p>
           </div>
 
           {error && (
@@ -833,27 +845,52 @@ export default function AboutClient({
   interests,
   cardOverrides,
   headerOverride,
+  photoOverride,
+  photoChipOverrides,
 }: {
   timelineNodes: TimelineNode[]
   skillSections: SkillSection[]
   interests: InterestNode[]
   cardOverrides: Record<string, string[]>
   headerOverride?: PageHeaderOverride
+  photoOverride?: AboutPhotoOverride
+  photoChipOverrides?: Record<string, HeroChipOverride>
 }) {
   const { isAdmin } = useAuth()
   const router = useRouter()
 
   const [editingCard, setEditingCard] = useState<{ key: string; emoji: string; title: string; items: string[] } | null>(null)
   const [editingHeader, setEditingHeader] = useState(false)
+  const [editingPhoto, setEditingPhoto] = useState(false)
+  const [editingChip, setEditingChip] = useState<string | null>(null)
 
   const headerTitle = headerOverride?.title ?? DEFAULT_HEADER.title
   const headerSubtitle = headerOverride?.subtitle ?? DEFAULT_HEADER.subtitle
+  const photoUrl = photoOverride?.imageUrl?.trim() || '/images/heona1.jpg'
+  const chip1 = { ...DEFAULT_PHOTO_CHIPS.chip1, ...photoChipOverrides?.chip1 }
+  const chip2 = { ...DEFAULT_PHOTO_CHIPS.chip2, ...photoChipOverrides?.chip2 }
 
   const handleSaveHeader = async (values: Record<string, string>) => {
     const { auth } = await import('@/lib/firebase')
     if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
     const { savePageHeader } = await import('@/lib/page-content-firestore')
     await savePageHeader('about', { title: values.title.trim(), subtitle: values.subtitle.trim() })
+    router.refresh()
+  }
+
+  const handleSavePhoto = async (values: Record<string, string>) => {
+    const { auth } = await import('@/lib/firebase')
+    if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
+    const { saveAboutPhoto } = await import('@/lib/page-content-firestore')
+    await saveAboutPhoto({ imageUrl: values.imageUrl.trim() })
+    router.refresh()
+  }
+
+  const handleSaveChip = (chipId: string) => async (values: Record<string, string>) => {
+    const { auth } = await import('@/lib/firebase')
+    if (!auth?.currentUser) throw new Error('You are not signed in. Please sign in as admin and try again.')
+    const { saveAboutPhotoChip } = await import('@/lib/page-content-firestore')
+    await saveAboutPhotoChip(chipId, { label: values.label.trim(), sublabel: values.sublabel.trim() })
     router.refresh()
   }
 
@@ -1139,40 +1176,77 @@ export default function AboutClient({
               <div className="relative mx-auto max-w-sm lg:ml-auto lg:mr-0">
                 <div className="relative aspect-square rounded-[2rem] overflow-hidden
                                 border border-[#671372]/10 dark:border-[#671372]/20
-                                shadow-large">
+                                shadow-large group/photo">
                   <Image
-                    src="/images/heona1.jpg"
+                    src={photoUrl}
                     alt="Heona Liu"
                     fill
                     sizes="(min-width: 1024px) 384px, 90vw"
                     className="object-cover"
                     priority
                   />
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingPhoto(true)}
+                      title="Change photo"
+                      className="absolute bottom-3 right-3 w-8 h-8 rounded-full
+                                 bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm
+                                 border border-gray-200 dark:border-gray-700
+                                 flex items-center justify-center shadow-soft
+                                 opacity-0 group-hover/photo:opacity-100 transition-opacity"
+                    >
+                      <PenLine size={13} className="text-gray-600 dark:text-gray-300" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Floating chips — intentionally offset but contained */}
                 <motion.div
                   animate={{ y: [-5, 5, -5] }}
                   transition={{ duration: 4.5, repeat: Infinity }}
-                  className="absolute -bottom-4 -left-4 z-10
+                  className="group/chip absolute -bottom-4 -left-4 z-10
                              bg-white dark:bg-gray-800
                              border border-gray-100 dark:border-gray-700
                              rounded-2xl px-4 py-3 shadow-medium"
                 >
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Favourite language</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">TypeScript 💙</p>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingChip('chip1')}
+                      title="Edit badge"
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full
+                                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                                 flex items-center justify-center shadow-soft
+                                 opacity-0 group-hover/chip:opacity-100 transition-opacity"
+                    >
+                      <PenLine size={11} className="text-gray-400" />
+                    </button>
+                  )}
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">{chip1.sublabel}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">{chip1.label}</p>
                 </motion.div>
 
                 <motion.div
                   animate={{ y: [5, -5, 5] }}
                   transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-                  className="absolute -top-4 -right-4 z-10
+                  className="group/chip absolute -top-4 -right-4 z-10
                              bg-white dark:bg-gray-800
                              border border-gray-100 dark:border-gray-700
                              rounded-2xl px-4 py-3 shadow-medium"
                 >
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Currently building</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">This site ✨</p>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingChip('chip2')}
+                      title="Edit badge"
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full
+                                 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600
+                                 flex items-center justify-center shadow-soft
+                                 opacity-0 group-hover/chip:opacity-100 transition-opacity"
+                    >
+                      <PenLine size={11} className="text-gray-400" />
+                    </button>
+                  )}
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">{chip2.sublabel}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">{chip2.label}</p>
                 </motion.div>
               </div>
             </AnimatedSection>
@@ -1384,7 +1458,7 @@ export default function AboutClient({
                       {interest.label}
                     </h3>
                     <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                      {interest.desc}
+                      <LinkedText text={interest.desc} />
                     </p>
                   </motion.div>
                 </AnimatedSection>
@@ -1472,7 +1546,7 @@ export default function AboutClient({
                           {node.title}
                         </h3>
                         <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                          {node.desc}
+                          <LinkedText text={node.desc} />
                         </p>
                       </div>
 
@@ -1530,7 +1604,7 @@ export default function AboutClient({
                             {node.title}
                           </h3>
                           <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                            {node.desc}
+                            <LinkedText text={node.desc} />
                           </p>
                         </div>
                       </div>
@@ -1634,6 +1708,35 @@ export default function AboutClient({
             ]}
             onClose={() => setEditingHeader(false)}
             onSave={handleSaveHeader}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Photo ════════════════════════════════════ */}
+      <AnimatePresence>
+        {editingPhoto && (
+          <EditTextFieldsModal
+            heading="Change Profile Photo"
+            fields={[
+              { key: 'imageUrl', label: 'Image URL (e.g. an Imgur link)', value: photoOverride?.imageUrl ?? '', placeholder: 'https://i.imgur.com/your-image.jpg' },
+            ]}
+            onClose={() => setEditingPhoto(false)}
+            onSave={handleSavePhoto}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Edit Photo Badge ══════════════════════════════ */}
+      <AnimatePresence>
+        {editingChip && (
+          <EditTextFieldsModal
+            heading="Edit Badge"
+            fields={[
+              { key: 'label', label: 'Label', value: editingChip === 'chip1' ? chip1.label : chip2.label },
+              { key: 'sublabel', label: 'Sublabel', value: editingChip === 'chip1' ? chip1.sublabel : chip2.sublabel },
+            ]}
+            onClose={() => setEditingChip(null)}
+            onSave={handleSaveChip(editingChip)}
           />
         )}
       </AnimatePresence>
