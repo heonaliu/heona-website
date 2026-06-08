@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, User, Palette, Code2, BookOpen, Mail,
-  Menu, X, Sparkles, ShieldX,
+  Menu, X, Sparkles, ShieldX, KeyRound,
 } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useAuth } from '@/context/AuthContext'
@@ -20,11 +20,52 @@ const navLinks = [
   { href: '/contact',  label: 'Contact',  Icon: Mail     },
 ]
 
+const GATE_CODE = (process.env.NEXT_PUBLIC_SIGNIN_GATE_CODE || '').toUpperCase()
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
   const { isAdmin, user, signInWithGoogle, signOutUser, unauthorizedAttempt, clearUnauthorizedAttempt } = useAuth()
+
+  const [showSignInGate, setShowSignInGate] = useState(false)
+  const [gateInput, setGateInput] = useState('')
+  const [gateVerified, setGateVerified] = useState(false)
+  const [gateError, setGateError] = useState(false)
+
+  const openSignInGate = () => {
+    setGateInput('')
+    setGateVerified(false)
+    setGateError(false)
+    setShowSignInGate(true)
+  }
+
+  const closeSignInGate = () => setShowSignInGate(false)
+
+  const handleGateInputChange = (value: string) => {
+    const next = value.toUpperCase().slice(0, 4)
+    setGateInput(next)
+    setGateError(false)
+    if (next.length === 4) {
+      if (GATE_CODE && next === GATE_CODE) {
+        setGateVerified(true)
+      } else {
+        setGateError(true)
+        setGateVerified(false)
+        setTimeout(() => {
+          setGateInput('')
+          setGateError(false)
+        }, 700)
+      }
+    } else {
+      setGateVerified(false)
+    }
+  }
+
+  const handleGateSignIn = () => {
+    closeSignInGate()
+    signInWithGoogle()
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -243,7 +284,7 @@ export default function Navbar() {
                   </button>
                 ) : !user ? (
                   <button
-                    onClick={signInWithGoogle}
+                    onClick={openSignInGate}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium
                                bg-[#671372] text-white hover:bg-[#8B1D9F] transition-colors"
                   >
@@ -253,6 +294,88 @@ export default function Navbar() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Sign-in verification gate ─── */}
+      <AnimatePresence>
+        {showSignInGate && (
+          <motion.div
+            key="gate-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm
+                       flex items-center justify-center px-4"
+            onClick={closeSignInGate}
+          >
+            <motion.div
+              key="gate-panel"
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.97 }}
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.5 }}
+              className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="flex items-center gap-2.5 text-lg font-bold text-gray-900 dark:text-white">
+                  <KeyRound size={17} className="text-[#671372] dark:text-[#c44cf0]" /> Verify to continue
+                </h2>
+                <button
+                  onClick={closeSignInGate}
+                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800
+                             flex items-center justify-center
+                             hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={14} className="text-gray-600 dark:text-gray-300" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                Enter your access code to continue.
+              </p>
+
+              <input
+                type="password"
+                value={gateInput}
+                onChange={(e) => handleGateInputChange(e.target.value)}
+                placeholder="••••"
+                maxLength={4}
+                autoFocus
+                className={`w-full text-center font-mono text-lg tracking-[0.4em] uppercase
+                            px-4 py-3 rounded-2xl border bg-transparent
+                            text-gray-900 dark:text-white
+                            placeholder:tracking-normal placeholder:font-sans placeholder:text-sm
+                            focus:outline-none focus:ring-2 transition-colors
+                            ${gateError
+                              ? 'border-red-300 dark:border-red-700 focus:ring-red-200 dark:focus:ring-red-900/40'
+                              : gateVerified
+                                ? 'border-emerald-300 dark:border-emerald-700 focus:ring-emerald-200 dark:focus:ring-emerald-900/40'
+                                : 'border-gray-200 dark:border-gray-700 focus:ring-[#671372]/20'
+                            }`}
+              />
+              {gateError && (
+                <p className="text-xs text-red-500 mt-2 text-center">Incorrect code — try again.</p>
+              )}
+
+              <AnimatePresence>
+                {gateVerified && (
+                  <motion.button
+                    key="gate-google-btn"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    onClick={handleGateSignIn}
+                    className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold
+                               bg-[#671372] text-white hover:bg-[#8B1D9F] transition-colors"
+                  >
+                    Sign in with Google
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>
