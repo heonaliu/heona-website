@@ -1196,22 +1196,6 @@ export default function ArtClient({
             )}
           </div>
 
-          <AnimatedSection delay={0.3} className="mt-14 max-w-2xl">
-            <div className="p-8 bg-white dark:bg-gray-900
-                            border border-gray-100 dark:border-gray-800
-                            rounded-3xl shadow-soft">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
-                💭 On the connection between code and art
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">
-                Both coding and art are fundamentally about problem-solving with constraints. In
-                programming, you have languages, APIs, and logic. In art, you have colors,
-                composition, and medium. The process of going from blank page to something
-                meaningful — that journey is identical. Both teach you to iterate, to embrace
-                failure, and to find beauty in the act of making.
-              </p>
-            </div>
-          </AnimatedSection>
         </Container>
       </section>
 

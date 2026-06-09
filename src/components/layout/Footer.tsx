@@ -35,9 +35,6 @@ export default function Footer() {
               </div>
               <span className="text-xl font-bold gradient-text">Heona Liu</span>
             </Link>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-xs">
-              A minimal digital space showcasing engineering, creativity, and personal growth.
-            </p>
           </div>
 
           {/* Nav */}
