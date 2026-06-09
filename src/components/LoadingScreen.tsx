@@ -26,49 +26,52 @@ export default function LoadingScreen() {
       {loading && (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, y: -20 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white dark:bg-gray-950"
         >
-          {/* Background blur blobs */}
-          <div className="absolute inset-0 overflow-hidden">
+          {/* Ambient blobs */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <motion.div
-              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#671372]/20 blur-3xl"
+              animate={{ scale: [1, 1.3, 1], opacity: [0.25, 0.55, 0.25] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-1/3 left-1/3 w-80 h-80 rounded-full bg-[#671372]/20 blur-3xl"
             />
             <motion.div
-              animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-              className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-[#8B1D9F]/20 blur-3xl"
+              animate={{ scale: [1.2, 1, 1.2], opacity: [0.15, 0.4, 0.15] }}
+              transition={{ duration: 3.5, repeat: Infinity, delay: 0.8, ease: 'easeInOut' }}
+              className="absolute bottom-1/3 right-1/3 w-64 h-64 rounded-full bg-[#c44cf0]/15 blur-3xl"
             />
           </div>
 
-          <div className="relative z-10 flex flex-col items-center gap-8">
-            {/* Logo animation */}
+          <div className="relative z-10 flex flex-col items-center gap-10">
+            {/* Glowing circle */}
             <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-              className="w-16 h-16 rounded-2xl bg-[#671372] flex items-center justify-center shadow-purple-lg"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 180, damping: 18 }}
+              className="relative"
             >
-              <span className="text-white font-bold text-xl">HL</span>
-            </motion.div>
-
-            {/* Name */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-center"
-            >
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">initializing...</p>
+              {/* Outer pulse ring */}
+              <motion.div
+                animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                className="absolute inset-0 rounded-full bg-[#671372]/40"
+              />
+              {/* Mid glow */}
+              <motion.div
+                animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.2, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.1 }}
+                className="absolute inset-0 rounded-full bg-[#671372]/50 blur-md"
+              />
+              {/* Core circle */}
+              <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#671372] via-[#8B1D9F] to-[#c44cf0]" />
             </motion.div>
 
             {/* Progress bar */}
-            <div className="w-48 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div className="w-40 h-0.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-[#671372] via-[#8B1D9F] to-[#c44cf0]"
+                className="h-full rounded-full bg-gradient-to-r from-[#671372] to-[#c44cf0]"
                 style={{ width: `${Math.min(progress, 100)}%` }}
                 transition={{ duration: 0.1 }}
               />

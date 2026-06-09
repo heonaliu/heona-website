@@ -30,6 +30,7 @@ export default function ContactClient({ headerOverride }: Props) {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { isAdmin } = useAuth()
   const router = useRouter()
   const [editingHeader, setEditingHeader] = useState(false)
@@ -48,9 +49,23 @@ export default function ContactClient({ headerOverride }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1400))
-    setSubmitted(true)
-    setLoading(false)
+    setError(null)
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Something went wrong. Please try again.')
+      }
+      setSubmitted(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to send message.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputCls = `w-full px-5 py-3.5 rounded-2xl text-sm
@@ -209,6 +224,12 @@ export default function ContactClient({ headerOverride }: Props) {
                         <><Send size={15} /> Send Message</>
                       )}
                     </motion.button>
+
+                    {error && (
+                      <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2.5 mt-3">
+                        {error}
+                      </p>
+                    )}
                   </form>
                 )}
               </AnimatedSection>

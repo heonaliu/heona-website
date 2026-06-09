@@ -124,7 +124,14 @@ export default function BlogPostClient({ post }: Props) {
                 prose-li:text-gray-700 dark:prose-li:text-gray-300
                 prose-hr:border-gray-200 dark:prose-hr:border-gray-800"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+                  ),
+                }}
+              >{post.content}</ReactMarkdown>
             </motion.article>
 
             {/* Footer */}

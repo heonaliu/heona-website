@@ -1,89 +1,88 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useEffect, useRef } from 'react'
 
 export default function CursorGlow() {
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [ringPosition, setRingPosition] = useState({ x: 0, y: 0 })
-  const [isHovering, setIsHovering] = useState(false)
-  const [isVisible, setIsVisible] = useState(false)
-  const rafRef = useRef<number>(0)
-  const targetRef = useRef({ x: 0, y: 0 })
+  const dotRef = useRef<HTMLDivElement>(null)
+  const ringRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Only show on non-touch devices
     if (window.matchMedia('(hover: none)').matches) return
 
-    const handleMouseMove = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY })
-      targetRef.current = { x: e.clientX, y: e.clientY }
-      if (!isVisible) setIsVisible(true)
-    }
-
-    const handleMouseLeave = () => setIsVisible(false)
-
-    const handleMouseEnter = () => setIsVisible(true)
-
-    // Check for interactive elements
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const interactive = target.closest('a, button, [role="button"], input, textarea, select')
-      setIsHovering(!!interactive)
-    }
-
-    // Smooth ring follow
+    const target = { x: -200, y: -200 }
+    const ring = { x: -200, y: -200 }
+    let visible = false
+    let hovering = false
     let animFrame: number
-    const animateRing = () => {
-      setRingPosition((prev) => ({
-        x: prev.x + (targetRef.current.x - prev.x) * 0.12,
-        y: prev.y + (targetRef.current.y - prev.y) * 0.12,
-      }))
-      animFrame = requestAnimationFrame(animateRing)
-    }
-    animFrame = requestAnimationFrame(animateRing)
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    window.addEventListener('mouseleave', handleMouseLeave)
-    window.addEventListener('mouseenter', handleMouseEnter)
-    window.addEventListener('mouseover', handleMouseOver, { passive: true })
+    const tick = () => {
+      ring.x += (target.x - ring.x) * 0.18
+      ring.y += (target.y - ring.y) * 0.18
+
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${target.x - 4}px, ${target.y - 4}px) scale(${hovering ? 1.8 : 1})`
+        dotRef.current.style.opacity = visible ? '1' : '0'
+      }
+      if (ringRef.current) {
+        ringRef.current.style.transform = `translate(${ring.x - 16}px, ${ring.y - 16}px)`
+        ringRef.current.style.opacity = visible ? (hovering ? '0.75' : '0.45') : '0'
+      }
+
+      animFrame = requestAnimationFrame(tick)
+    }
+    animFrame = requestAnimationFrame(tick)
+
+    const onMove = (e: MouseEvent) => {
+      target.x = e.clientX
+      target.y = e.clientY
+      visible = true
+    }
+    const onLeave = () => { visible = false }
+    const onEnter = () => { visible = true }
+    const onOver = (e: MouseEvent) => {
+      hovering = !!((e.target as HTMLElement).closest('a, button, [role="button"], input, textarea, select'))
+    }
+
+    window.addEventListener('mousemove', onMove, { passive: true })
+    document.addEventListener('mouseleave', onLeave)
+    document.addEventListener('mouseenter', onEnter)
+    window.addEventListener('mouseover', onOver, { passive: true })
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseleave', handleMouseLeave)
-      window.removeEventListener('mouseenter', handleMouseEnter)
-      window.removeEventListener('mouseover', handleMouseOver)
+      window.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('mouseenter', onEnter)
+      window.removeEventListener('mouseover', onOver)
       cancelAnimationFrame(animFrame)
     }
-  }, [isVisible])
-
-  if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
-    return null
-  }
+  }, [])
 
   return (
     <>
-      {/* Dot */}
-      <motion.div
-        className="cursor-dot pointer-events-none hidden lg:block"
+      <div
+        ref={dotRef}
+        className="pointer-events-none hidden lg:block"
         style={{
-          left: position.x - 4,
-          top: position.y - 4,
-          opacity: isVisible ? 1 : 0,
-          transform: isHovering ? 'scale(2)' : 'scale(1)',
+          position: 'fixed', top: 0, left: 0,
+          width: 8, height: 8,
+          background: '#671372',
+          borderRadius: '50%',
+          zIndex: 99999,
+          transition: 'opacity 0.2s ease, transform 0.06s ease',
+          willChange: 'transform',
         }}
       />
-      {/* Ring */}
-      <motion.div
-        className="cursor-ring pointer-events-none hidden lg:block"
+      <div
+        ref={ringRef}
+        className="pointer-events-none hidden lg:block"
         style={{
-          left: ringPosition.x - 16,
-          top: ringPosition.y - 16,
-          opacity: isVisible ? (isHovering ? 0.8 : 0.5) : 0,
-          width: isHovering ? 48 : 32,
-          height: isHovering ? 48 : 32,
-          marginLeft: isHovering ? -8 : 0,
-          marginTop: isHovering ? -8 : 0,
+          position: 'fixed', top: 0, left: 0,
+          width: 32, height: 32,
+          border: '2px solid rgba(103,19,114,0.55)',
+          borderRadius: '50%',
+          zIndex: 99998,
+          transition: 'opacity 0.2s ease',
+          willChange: 'transform',
         }}
       />
     </>

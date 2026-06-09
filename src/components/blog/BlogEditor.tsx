@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Save, Eye, EyeOff, Send, ArrowLeft, Tag, Clock, Image as ImageIcon, X } from 'lucide-react'
+import { Save, Eye, EyeOff, Send, ArrowLeft, Tag, Clock, Image as ImageIcon, X, Link2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -36,10 +36,14 @@ export default function BlogEditor({
   const isEditMode = Boolean(postId)
 
   const [title, setTitle]     = useState(initialTitle)
+  const [slug, setSlug]       = useState(initialSlug || '')
   const [content, setContent] = useState(initialContent)
   const [excerpt, setExcerpt] = useState(initialExcerpt)
   const [date, setDate]       = useState(initialDate || new Date().toISOString().slice(0, 10))
   const [tags, setTags]       = useState<string[]>(initialTags)
+
+  const sanitizeSlug = (v: string) =>
+    v.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
   const [tagInput, setTagInput] = useState('')
   const [isDraft, setIsDraft] = useState(!isEditMode)
   const [preview, setPreview] = useState(false)
@@ -98,6 +102,7 @@ export default function BlogEditor({
         const { doc, updateDoc } = await import('firebase/firestore')
         await updateDoc(doc(db, 'posts', postId), {
           title, content, excerpt, tags,
+          ...(slug ? { slug } : {}),
           publishedAt,
           updatedAt: serverTimestamp(),
         })
@@ -127,7 +132,7 @@ export default function BlogEditor({
     } finally {
       setSaving(false)
     }
-  }, [isAdmin, title, content, excerpt, date, tags, user, isEditMode, postId])
+  }, [isAdmin, title, slug, content, excerpt, date, tags, user, isEditMode, postId])
 
   // ─── Publish ──────────────────────────────────────────────
   const publish = async () => {
@@ -141,13 +146,20 @@ export default function BlogEditor({
 
       if (isEditMode && postId) {
         const { doc, updateDoc } = await import('firebase/firestore')
+        const finalSlug = slug || title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
         await updateDoc(doc(db, 'posts', postId), {
+          slug: finalSlug,
           title, content, excerpt, tags,
           draft: false, published: true,
           publishedAt,
           updatedAt: serverTimestamp(),
         })
-        router.push(`/blog/${initialSlug}`)
+        router.push(`/blog/${finalSlug}`)
       } else {
         const { collection, addDoc } = await import('firebase/firestore')
         const slug = title
@@ -326,7 +338,20 @@ export default function BlogEditor({
               )}
             </div>
 
-            {!isEditMode && (
+            {isEditMode ? (
+              <div className="flex items-center gap-2">
+                <Link2 size={13} className="text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <label className="text-xs text-gray-400 block mb-1">URL slug</label>
+                  <input
+                    value={slug}
+                    onChange={(e) => setSlug(sanitizeSlug(e.target.value))}
+                    placeholder="post-url-slug"
+                    className="w-full text-sm bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 font-mono"
+                  />
+                </div>
+              </div>
+            ) : (
               <div className="flex items-center justify-end gap-3">
                 <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                   <input
