@@ -41,6 +41,7 @@ export async function savePageHeader(pageId: string, data: PageHeaderOverride): 
 export interface HeroChipOverride {
   label?: string
   sublabel?: string
+  icon?: string
 }
 
 // Keyed by a fixed chip id (e.g. 'chip1', 'chip2') — overrides the floating
@@ -57,6 +58,7 @@ export async function getHeroChipOverrides(): Promise<Record<string, HeroChipOve
       overrides[doc.id] = {
         label: typeof d.label === 'string' ? d.label : undefined,
         sublabel: typeof d.sublabel === 'string' ? d.sublabel : undefined,
+        icon: typeof d.icon === 'string' ? d.icon : undefined,
       }
     })
     return overrides
@@ -114,6 +116,7 @@ export async function getAboutPhotoChipOverrides(): Promise<Record<string, HeroC
       overrides[doc.id] = {
         label: typeof d.label === 'string' ? d.label : undefined,
         sublabel: typeof d.sublabel === 'string' ? d.sublabel : undefined,
+        icon: typeof d.icon === 'string' ? d.icon : undefined,
       }
     })
     return overrides

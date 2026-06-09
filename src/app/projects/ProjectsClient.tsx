@@ -505,6 +505,24 @@ function ProjectFormModal({
   )
 }
 
+// ─── Tag pill ──────────────────────────────────────────────────────────────────
+function TagPill({ tag, activeTag, onSelect }: { tag: string; activeTag: string; onSelect: (t: string) => void }) {
+  return (
+    <motion.button
+      onClick={() => onSelect(tag)}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+        activeTag === tag
+          ? 'bg-[#671372] text-white shadow-purple-lg'
+          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+      }`}
+    >
+      {tag}
+    </motion.button>
+  )
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ProjectsClient({ projects, headerOverride }: Props) {
   const router = useRouter()
@@ -512,6 +530,7 @@ export default function ProjectsClient({ projects, headerOverride }: Props) {
 
   const [activeTag, setActiveTag] = useState('All')
   const [search, setSearch]       = useState('')
+  const [tagsExpanded, setTagsExpanded] = useState(false)
   const [selected, setSelected]   = useState<Project | null>(null)
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Project | null>(null)
@@ -594,7 +613,16 @@ export default function ProjectsClient({ projects, headerOverride }: Props) {
     }
   }
 
-  const derivedTags = ['All', ...Array.from(new Set(projects.flatMap((p) => p.tags))).sort()]
+  const TAG_VISIBLE_LIMIT = 6
+  // Sort tags by frequency (most-used first), then alphabetically for ties
+  const tagFreq = projects.flatMap((p) => p.tags).reduce<Record<string, number>>((acc, t) => {
+    acc[t] = (acc[t] ?? 0) + 1; return acc
+  }, {})
+  const allTags = Array.from(new Set(projects.flatMap((p) => p.tags)))
+    .sort((a, b) => (tagFreq[b] - tagFreq[a]) || a.localeCompare(b))
+  const visibleTags = allTags.slice(0, TAG_VISIBLE_LIMIT)
+  const hiddenTags  = allTags.slice(TAG_VISIBLE_LIMIT)
+  const derivedTags = ['All', ...allTags]
 
   const filtered = projects.filter((p) => {
     const matchTag = activeTag === 'All' || p.tags.includes(activeTag)
@@ -683,22 +711,54 @@ export default function ProjectsClient({ projects, headerOverride }: Props) {
 
             {/* Tags */}
             <AnimatedSection delay={0.05} className="flex-1">
-              <div className="flex flex-wrap gap-1.5">
-                {derivedTags.map((tag) => (
-                  <motion.button
-                    key={tag}
-                    onClick={() => setActiveTag(tag)}
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                      activeTag === tag
-                        ? 'bg-[#671372] text-white shadow-purple-lg'
-                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
-                    }`}
-                  >
-                    {tag}
-                  </motion.button>
-                ))}
+              <div className="flex flex-col gap-2">
+                {/* Always-visible row: All + top tags + expand toggle */}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {/* "All" pill */}
+                  <TagPill tag="All" activeTag={activeTag} onSelect={setActiveTag} />
+                  {/* Top N tags */}
+                  {visibleTags.map((tag) => (
+                    <TagPill key={tag} tag={tag} activeTag={activeTag} onSelect={setActiveTag} />
+                  ))}
+                  {/* Show more / less toggle */}
+                  {hiddenTags.length > 0 && (
+                    <motion.button
+                      onClick={() => setTagsExpanded((v) => !v)}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200
+                        ${hiddenTags.includes(activeTag)
+                          ? 'bg-[#671372] text-white'
+                          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+                        }`}
+                    >
+                      {tagsExpanded
+                        ? <><ChevronUp size={11} /> Less</>
+                        : <>{hiddenTags.includes(activeTag) ? activeTag : `+${hiddenTags.length} more`}<ChevronDown size={11} /></>
+                      }
+                    </motion.button>
+                  )}
+                </div>
+
+                {/* Expanded overflow grid */}
+                <AnimatePresence>
+                  {tagsExpanded && hiddenTags.length > 0 && (
+                    <motion.div
+                      key="overflow-tags"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-wrap gap-1.5 pt-1 pl-1 border-l-2 border-[#671372]/20 dark:border-[#671372]/30">
+                        {hiddenTags.map((tag) => (
+                          <TagPill key={tag} tag={tag} activeTag={activeTag} onSelect={(t) => { setActiveTag(t); setTagsExpanded(false) }} />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </AnimatedSection>
           </div>
@@ -794,13 +854,14 @@ export default function ProjectsClient({ projects, headerOverride }: Props) {
                               <Github size={12} /> Code
                             </a>
                           )}
-                          {project.demo ? (
+                          {project.demo && (
                             <a href={project.demo} target="_blank" rel="noopener noreferrer"
                                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium
                                           bg-[#671372] text-white hover:bg-[#8B1D9F] transition-all">
                               <ExternalLink size={12} /> Live
                             </a>
-                          ) : (
+                          )}
+                          {project.longDescription && (
                             <button
                               onClick={() => setSelected(project)}
                               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium

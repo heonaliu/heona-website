@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
-import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, PenLine, Plus, Trash2, GripVertical } from 'lucide-react'
+import { X, ZoomIn, Calendar, Layers, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PenLine, Plus, Trash2, GripVertical } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import Container from '@/components/ui/Container'
@@ -699,6 +699,24 @@ function JourneyFormModal({
   )
 }
 
+// ─── Tag pill ──────────────────────────────────────────────────────────────────
+function ArtTagPill({ tag, filter, onSelect }: { tag: string; filter: string; onSelect: (t: string) => void }) {
+  return (
+    <motion.button
+      onClick={() => onSelect(tag)}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+        filter === tag
+          ? 'bg-[#671372] text-white shadow-purple-lg'
+          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+      }`}
+    >
+      {tag}
+    </motion.button>
+  )
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ArtClient({
   overrides,
@@ -717,6 +735,7 @@ export default function ArtClient({
 
   const [selected, setSelected]   = useState<Artwork | null>(null)
   const [filter, setFilter]       = useState('all')
+  const [tagsExpanded, setTagsExpanded] = useState(false)
   const [editing, setEditing]     = useState<Artwork | null>(null)
   const [showAddArtwork, setShowAddArtwork] = useState(false)
   const [deleting, setDeleting]   = useState<string | null>(null)
@@ -842,7 +861,14 @@ export default function ArtClient({
   // New milestones are placed at the top of the timeline (most recent first)
   const nextJourneyOrder = localJourney.length ? Math.min(...localJourney.map((n) => n.order)) - 1 : 0
 
-  const allTags  = ['all', ...Array.from(new Set(artworks.flatMap((a) => a.tags)))]
+  const TAG_VISIBLE_LIMIT = 6
+  const tagFreq = artworks.flatMap((a) => a.tags).reduce<Record<string, number>>((acc, t) => {
+    acc[t] = (acc[t] ?? 0) + 1; return acc
+  }, {})
+  const sortedTags = Array.from(new Set(artworks.flatMap((a) => a.tags)))
+    .sort((a, b) => (tagFreq[b] - tagFreq[a]) || a.localeCompare(b))
+  const visibleTags = sortedTags.slice(0, TAG_VISIBLE_LIMIT)
+  const hiddenTags  = sortedTags.slice(TAG_VISIBLE_LIMIT)
   const filtered = filter === 'all' ? artworks : artworks.filter((a) => a.tags.includes(filter))
 
   const currentIndex = selected ? artworks.findIndex((a) => a.id === selected.id) : -1
@@ -901,22 +927,51 @@ export default function ArtClient({
       <section className="section-tint py-3">
         <Container>
           <AnimatedSection>
-            <div className="flex flex-wrap gap-1.5">
-              {allTags.map((tag) => (
-                <motion.button
-                  key={tag}
-                  onClick={() => setFilter(tag)}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                    filter === tag
-                      ? 'bg-[#671372] text-white shadow-purple-lg'
-                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
-                  }`}
-                >
-                  {tag}
-                </motion.button>
-              ))}
+            <div className="flex flex-col gap-2">
+              {/* Always-visible row: all + top tags + expand toggle */}
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <ArtTagPill tag="all" filter={filter} onSelect={setFilter} />
+                {visibleTags.map((tag) => (
+                  <ArtTagPill key={tag} tag={tag} filter={filter} onSelect={setFilter} />
+                ))}
+                {hiddenTags.length > 0 && (
+                  <motion.button
+                    onClick={() => setTagsExpanded((v) => !v)}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200
+                      ${hiddenTags.includes(filter)
+                        ? 'bg-[#671372] text-white'
+                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[#671372]/30 dark:hover:border-[#671372]/40'
+                      }`}
+                  >
+                    {tagsExpanded
+                      ? <><ChevronUp size={11} /> Less</>
+                      : <>{hiddenTags.includes(filter) ? filter : `+${hiddenTags.length} more`}<ChevronDown size={11} /></>
+                    }
+                  </motion.button>
+                )}
+              </div>
+
+              {/* Expanded overflow tags */}
+              <AnimatePresence>
+                {tagsExpanded && hiddenTags.length > 0 && (
+                  <motion.div
+                    key="overflow-tags"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-wrap gap-1.5 pt-1 pl-1 border-l-2 border-[#671372]/20 dark:border-[#671372]/30">
+                      {hiddenTags.map((tag) => (
+                        <ArtTagPill key={tag} tag={tag} filter={filter} onSelect={(t) => { setFilter(t); setTagsExpanded(false) }} />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </AnimatedSection>
         </Container>
