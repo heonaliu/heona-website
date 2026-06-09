@@ -9,7 +9,7 @@ const socials = [
   { Icon: Github,   href: 'https://github.com/heonaliu',         label: 'GitHub'   },
   { Icon: Linkedin, href: 'https://www.linkedin.com/in/heona-liu-3ab1b237a/',    label: 'LinkedIn' },
   { Icon: Mail,     href: 'mailto:heonaliu@gmail.com',           label: 'Email'    },
-  { Icon: Youtube,  href: 'https://www.youtube.com/@heonaliu',      label: 'YouTube'  },
+  { Icon: Youtube,  href: 'https://www.youtube.com/@sleepymeilows', label: 'YouTube'  },
 ]
 
 const pages = [
