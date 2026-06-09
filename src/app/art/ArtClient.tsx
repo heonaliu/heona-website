@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext'
 import type { ArtworkOverride, CustomArtwork } from '@/lib/artworks-firestore'
 import type { ArtJourneyNode } from '@/lib/art-journey-firestore'
 import { staticArtworks, buildArtworkList, type Artwork } from '@/lib/artworks'
+import LinkedText from '@/components/ui/LinkedText'
 import type { PageHeaderOverride } from '@/lib/page-content-firestore'
 
 const DEFAULT_HEADER = {
@@ -1142,7 +1143,7 @@ export default function ArtClient({
                         {node.year}
                       </span>
                       <p className="text-sm text-gray-700 dark:text-gray-300 mt-2.5 leading-relaxed">
-                        {node.milestone}
+                        <LinkedText text={node.milestone} />
                       </p>
                     </div>
 
@@ -1185,7 +1186,7 @@ export default function ArtClient({
                           {year}
                         </span>
                         <p className="text-sm text-gray-700 dark:text-gray-300 mt-2.5 leading-relaxed">
-                          {milestone}
+                          <LinkedText text={milestone} />
                         </p>
                       </div>
                     </div>
